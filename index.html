@@ -603,7 +603,8 @@ function drawPlayer(n) {
   // 伸びた・伸ばしたい
   var DG = diagnose(last);
   var good = items.map(function (m, i) { return { m: m, v: now[i] }; }).filter(function (x) { return x.v != null; }).sort(function (a, b) { return b.v - a.v; });
-  var h = '<section class="hero"><div class="hero-l"><div class="hero-name">' + esc(n) + '</div><div class="hero-meta">' + esc(last.pos || '') + '・' + esc(last.arm || '') + '　' + JP(last.date) + '</div>' +
+  var h = (last.date !== S.date ? '<section><p class="warn">⚠️ ' + JP(S.date) + 'の記録はまだありません。' + (last.date < S.date ? '前回' : 'ほかの日') + '（' + JP(last.date) + '）の結果を出しています</p></section>' : '') +
+    '<section class="hero"><div class="hero-l"><div class="hero-name">' + esc(n) + '</div><div class="hero-meta">' + esc(last.pos || '') + '・' + esc(last.arm || '') + '　' + JP(last.date) + '</div>' +
     '<div class="hero-score"><span class="hs-label">総合偏差値</span><span class="hs-num">' + (t == null ? '—' : t.toFixed(0)) + '</span>' + (tp != null && t != null ? arrow(tp, t, 'x') : '') + '</div>' +
     (good.length ? '<div class="hero-tags"><span class="tag good">強み：' + good.slice(0, 2).map(function (x) { return EXPLAIN[x.m.k].s; }).join('・') + '</span><span class="tag work">伸びしろ：' + good.slice(-2).reverse().map(function (x) { return EXPLAIN[x.m.k].s; }).join('・') + '</span></div>' : '') +
     (DG.type && DG.type[0] ? '<div class="dg-type"><span class="dg-badge">' + DG.type[0] + '</span>' + DG.type[1] + '</div>' : (DG.type ? '<div class="dg-type">' + DG.type[1] + '</div>' : '')) +
