@@ -43,13 +43,19 @@
 .mv-wlab{fill:#245792;font-size:9px;font-weight:800}
 @media(min-width:760px){.rjoints{grid-template-columns:repeat(2,minmax(0,1fr))}}
 /* ストレートの区分の色帯（縦：伸び=青・標準=緑・垂れ=橙、横は濃さで分ける） */
-.fz{stroke:#fff;stroke-width:1}.fz-v0{fill:#dce8f7}.fz-v1{fill:#dff4e7}.fz-v2{fill:#fff0d8}
-.fz-v0.fz-h1{fill:#d9e5f2}.fz-v1.fz-h1{fill:#e2f5e9}.fz-v2.fz-h1{fill:#fff3ca}
+.fz{stroke:#fff;stroke-width:1}.fz-v0{fill:#dce8f7}.fz-v1{fill:#f0f6fc}.fz-v2{fill:#dff4e7}.fz-v3{fill:#fff8ec}.fz-v4{fill:#fff0d8}
+.fz-v0.fz-h1{fill:#d9e5f2}.fz-v2.fz-h1{fill:#e2f5e9}.fz-v4.fz-h1{fill:#fff3ca}
 .fz-h0,.fz-h2{opacity:.65}
 .fz-lab{fill:#245792;font-size:9px;font-weight:800}.fz-lab2{fill:#5a6270;font-size:8px}
 .fb-cls{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}.fb-cls span{padding:3px 10px;border-radius:999px;font-size:13px;font-weight:800}
-.fbv-0{background:#dce8f7;color:#245792}.fbv-1{background:#dff4e7;color:#176438}.fbv-2{background:#fff0d8;color:#9a5200}
+.fbv-0{background:#dce8f7;color:#245792}.fbv-1{background:#f0f6fc;color:#245792}.fbv-2{background:#dff4e7;color:#176438}.fbv-3{background:#fff8ec;color:#9a5200}.fbv-4{background:#fff0d8;color:#9a5200}
 .fbh-0,.fbh-2{background:#f0f2f5;color:#394556}.fbh-1{background:#e2f5e9;color:#176438}
+/* 入力：左右並べ・保存前の点検 */
+.lr-f{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:6px;padding:4px 0;border-top:1px dashed #e7ebef}
+.lr-f span{font-size:13px;color:#394556}.lr-f em{font-style:normal;font-size:12px;color:#5a6270}
+.lr-f input{width:100%;min-width:0;box-sizing:border-box;padding:6px;border:1px solid #c5ccd6;border-radius:6px;font-size:16px;text-align:right}
+.chk{margin:8px 0;padding:10px 12px;border:1px solid #f1d7ac;border-radius:10px;background:#fff8ec;font-size:13px}
+.chk ul{margin:6px 0 8px;padding-left:18px;color:#9a5200}
 </style>
 
 <title>測定</title><meta name="robots" content="noindex"></head>
@@ -163,7 +169,7 @@ function build() {
     Object.keys(by).forEach(function (t) {
       var ps = by[t], avg = function (f) { var v = ps.map(function (p) { return N(p[f]); }).filter(function (x) { return x != null; }); return v.length ? v.reduce(function (a, b) { return a + b; }, 0) / v.length : null; };
       var sp = ps.map(function (p) { return N(p.speed); }).filter(function (x) { return x != null; });
-      r.pitches[t] = { n: ps.length, speed: avg('speed'), speedMax: sp.length ? Math.max.apply(null, sp) : null, spin: avg('spin'), eff: avg('eff'), tspin: avg('tspin'), gyro: avg('gyro'), vb: avg('vb'), hb: avg('hb') };
+      r.pitches[t] = { n: ps.length, speed: avg('speed'), speedMax: sp.length ? Math.max.apply(null, sp) : null, spin: avg('spin'), eff: avg('eff'), tspin: avg('tspin'), gyro: avg('gyro'), vb: avg('vb'), hb: avg('hb'), ext: avg('ext'), rh: avg('rh'), rva: avg('rva') };
     });
     var st = r.pitches.ST || {};
     r.speed_max = st.speedMax == null ? null : st.speedMax; r.spin = st.spin == null ? null : st.spin; r.tspin = st.tspin == null ? null : st.tspin;
@@ -218,29 +224,44 @@ var romCell = function (x) { return x.st === 'none' ? '<span class="ref">—</sp
 
 // ===== 入力 =====
 function who() { return S.D.role === 'staff' ? { name: S.player, pos: (latest(S.player) || {}).pos || '投手', arm: (latest(S.player) || {}).arm || '右投げ' } : S.me; }
+var PF = ['speed', 'spin', 'eff', 'tspin', 'axis', 'gyro', 'vb', 'hb', 'ext', 'rh', 'rs', 'rva', 'rha'];
+var PH = ['球速', '回転数', '回転効率', 'トゥルースピン', '回転軸', 'ジャイロ', '縦変化', '横変化', 'エクステンション', 'リリース高', 'リリース左右', 'リリース角(縦)', 'リリース角(横)'];
 function drawInput() {
-  var w = who(), r = rec(S.date, w.name) || {}, it = S.D.items;
-  var field = function (m) { var v = r[m.k]; return '<label class="fld"><span>' + esc(m.l) + (m.en ? '<small>' + esc(m.en) + '</small>' : '') + '</span><input data-k="' + m.k + '" inputmode="decimal" value="' + (v == null ? '' : v) + '"><em>' + esc(m.u) + '</em></label>'; };
+  var w = who(), r = rec(S.date, w.name) || {}, it = S.D.items, T = w.arm === '左投げ' ? 'L' : 'R';
+  var val = function (k) { var v = r[k]; return v == null ? '' : v; };
+  var field = function (m) { return '<label class="fld"><span>' + esc(m.l) + (m.en ? '<small>' + esc(m.en) + '</small>' : '') + '</span><input data-k="' + m.k + '" inputmode="decimal" value="' + val(m.k) + '"><em>' + esc(m.u) + '</em></label>'; };
+  // 左右を並べる入力（部位ごと）
+  var lr = function (title, rows, tagL, tagR) {
+    var side = function (s, tag) {
+      return '<div class="rj-side' + (tag ? ' key' : '') + '"><div class="rj-sh"><b>' + (s === 'L' ? '左' : '右') + '</b>' + (tag ? '<span class="rj-tag">' + tag + '</span>' : '') + '</div>' +
+        rows.map(function (x) { return '<label class="lr-f"><span>' + x[0] + '</span><input data-k="' + x[1] + '_' + s + '" inputmode="decimal" value="' + val(x[1] + '_' + s) + '"><em>' + x[2] + '</em></label>'; }).join('') + '</div>';
+    };
+    return '<section class="rjoint"><div class="rj-h">' + title + '</div><div class="rj-lr">' + side('L', tagL) + side('R', tagR) + '</div></section>';
+  };
   var pl = (r.pl || []);
   var h = '<section><h2>' + esc(w.name) + '　' + JP(S.date) + 'の測定</h2>' +
     (S.date !== S.D.today ? '<p class="warn">⚠️ 今回（' + JP(S.D.today) + '）ではない日を開いています</p>' : '') +
-    '<div class="photo"><b>📷 写真で入れる</b><p class="note">ラプソード・VALDの画面や、記録用紙を撮ると、数字を読み取って下の欄に入れます。<b>入ったら数字を確かめてから保存</b>してください。</p>' +
+    '<div class="photo"><b>📷 写真で入れる</b><p class="note">ラプソード・VALDの画面や、記録用紙を撮ると、数字を読み取って下の欄に入れます。<b>入ったら数字を確かめてから保存</b>してください。撮った写真は記録として残ります。</p>' +
     '<label class="primary filebtn">写真を撮る・選ぶ<input type="file" id="ph" accept="image/*" hidden></label><div id="phOut"></div></div></section>';
-  h += '<section><h2>ラプソード（1球ずつ）</h2><div class="scroll"><table id="ptab"><tr><th class="l">球種</th><th>球速</th><th>回転数</th><th>回転効率</th><th>トゥルースピン</th><th>回転軸</th><th>ジャイロ</th><th>縦変化</th><th>横変化</th><th></th></tr>' +
-    pl.map(function (p) { return '<tr><td class="l">' + esc(p.pt) + '</td>' + ['speed', 'spin', 'eff', 'tspin', 'axis', 'gyro', 'vb', 'hb'].map(function (f) { return '<td>' + esc(p[f]) + '</td>'; }).join('') + '<td><button class="mini" data-del="' + p.id + '">消す</button></td></tr>'; }).join('') +
+  h += '<section><h2>ラプソード（1球ずつ）</h2><div class="scroll"><table id="ptab"><tr><th class="l">球種</th>' + PH.map(function (x) { return '<th>' + x + '</th>'; }).join('') + '<th></th></tr>' +
+    pl.map(function (p) { return '<tr><td class="l">' + esc(p.pt) + '</td>' + PF.map(function (f) { return '<td>' + esc(p[f]) + '</td>'; }).join('') + '<td><button class="mini" data-del="' + p.id + '">消す</button></td></tr>'; }).join('') +
     '</table></div>' + (pl.length ? '' : '<p class="note">まだ入っていません。</p>') +
-    '<h3>手で足す</h3><div class="scroll"><table><tr><th class="l">球種</th><th>球速</th><th>回転数</th><th>回転効率</th><th>トゥルースピン</th><th>回転軸</th><th>ジャイロ</th><th>縦変化</th><th>横変化</th></tr><tbody id="newP"></tbody></table></div>' +
-    '<button class="ghost" id="addRow">＋ 行を足す</button> <button class="primary" id="saveP">この球を保存</button>' +
-    '<p class="note">単位：球速 km/h・回転数 rpm・回転効率 %・変化量 cm。回転軸は「1:30」の形。横変化はラプソードの表示のまま。</p></section>';
-  [['VALD（ジャンプ）', it.vald], ['体', it.info], ['可動域', it.rom], ['握力', it.grip]].forEach(function (g, i) {
-    h += '<section><h2>' + g[0] + '</h2><div class="grid">' + g[1].map(field).join('') + '</div></section>';
-  });
-  h += '<section class="sticky"><button class="primary wide" id="saveB">体の数字を保存</button></section>';
+    '<h3>手で足す</h3><div class="scroll"><table><tr><th class="l">球種</th>' + PH.map(function (x) { return '<th>' + x + '</th>'; }).join('') + '</tr><tbody id="newP"></tbody></table></div>' +
+    '<button class="ghost" id="addRow">＋ 行を足す</button> <button class="primary" id="saveP">この球を保存</button><div id="chkP"></div>' +
+    '<p class="note">単位：球速 km/h・回転数 rpm・回転効率 %・変化量 cm・エクステンション・リリース高・左右 m・リリース角 °。回転軸は「1:30」の形。横変化はラプソードの表示のまま。</p></section>';
+  h += '<section><h2>VALD（Countermovement Jump）</h2><div class="grid">' + it.vald.map(field).join('') + '</div></section>';
+  h += '<section><h2>体</h2><div class="grid">' + it.info.map(field).join('') + '</div></section>';
+  h += '<h2 class="grp">可動域（左右を見まちがえないように）</h2><div class="rjoints">' +
+    lr('肩（腕を横に上げた位置）', [['内旋', 'sh_ir', '°'], ['外旋', 'sh_er', '°']], T === 'L' ? '投げる側' : '', T === 'R' ? '投げる側' : '') +
+    lr('股関節', [['内旋', 'hip_ir', '°'], ['外旋', 'hip_er', '°']], T === 'R' ? '踏み出し脚' : '軸脚', T === 'L' ? '踏み出し脚' : '軸脚') +
+    lr('胸郭回旋', [['回旋', 'th', '°']], '', '') +
+    lr('3指握力', [['握力', 'grip', 'kg']], T === 'L' ? '投げる手' : '', T === 'R' ? '投げる手' : '') + '</div>';
+  h += '<section class="sticky"><div id="chkB"></div><button class="primary wide" id="saveB">体の数字を保存</button></section>';
   main(h);
   addRow();
   $('addRow').onclick = function () { addRow(); };
-  $('saveP').onclick = savePitches;
-  $('saveB').onclick = saveBody;
+  $('saveP').onclick = function () { savePitches(false); };
+  $('saveB').onclick = function () { saveBody(false); };
   $('ph').onchange = readPhoto;
   document.querySelectorAll('button[data-del]').forEach(function (b) {
     b.onclick = async function () { b.disabled = true; try { await call('deletePitch', { id: b.dataset.del }); await reload(); toast('消しました'); } catch (e) { toast(e.message); b.disabled = false; } };
@@ -249,23 +270,71 @@ function drawInput() {
 function addRow(p) {
   p = p || {};
   var tr = document.createElement('tr');
+  if (p.photo) tr.dataset.photo = p.photo;
   tr.innerHTML = '<td class="l"><select data-f="pt">' + S.D.pitchTypes.map(function (t) { return '<option' + (t === (p.pt || 'ST') ? ' selected' : '') + '>' + t + '</option>'; }).join('') + '</select></td>' +
-    ['speed', 'spin', 'eff', 'tspin', 'axis', 'gyro', 'vb', 'hb'].map(function (f) { return '<td><input data-f="' + f + '" ' + (f === 'axis' ? '' : 'inputmode="decimal"') + ' value="' + (p[f] == null ? '' : p[f]) + '"' + (p.fromPhoto ? ' class="fromphoto"' : '') + '></td>'; }).join('');
+    PF.map(function (f) { return '<td><input data-f="' + f + '" ' + (f === 'axis' ? '' : 'inputmode="decimal"') + ' value="' + (p[f] == null ? '' : p[f]) + '"' + (p.fromPhoto ? ' class="fromphoto"' : '') + '></td>'; }).join('');
   $('newP').appendChild(tr);
 }
-async function savePitches() {
+
+// ===== 保存の前の点検（ありえない数字・入れまちがい） =====
+var RANGE = {
+  bm: [30, 130, '体重'], ht: [130, 210, '身長'], age: [12, 25, '年齢'],
+  jh: [10, 80, 'Jump Height'], ci: [50, 400, 'Concentric Impulse'], ci100: [10, 300, 'Concentric Impulse – 100ms'], rfd: [500, 30000, 'Eccentric Braking RFD'], pp: [1000, 8000, 'Peak Power'],
+  sh_ir: [0, 100, '肩の内旋'], sh_er: [60, 180, '肩の外旋'], hip_ir: [0, 90, '股関節の内旋'], hip_er: [0, 90, '股関節の外旋'], th: [0, 90, '胸郭回旋'], grip: [5, 70, '3指握力'],
+  speed: [50, 165, '球速'], spin: [100, 3500, '回転数'], eff: [0, 100, '回転効率'], tspin: [0, 3500, 'トゥルースピン'], gyro: [-90, 90, 'ジャイロ'], vb: [-80, 80, '縦変化'], hb: [-80, 80, '横変化'], ext: [0.5, 3, 'エクステンション'], rh: [0.5, 2.5, 'リリース高'], rs: [-1.5, 1.5, 'リリース左右'], rva: [-10, 10, 'リリース角(縦)'], rha: [-10, 10, 'リリース角(横)']
+};
+function rangeOf(k) { return RANGE[k] || RANGE[k.replace(/_[LR]$/, '')]; }
+function sideJa(k) { return /_L$/.test(k) ? '（左）' : /_R$/.test(k) ? '（右）' : ''; }
+function checkBody(f) {
+  var out = [], n = function (k) { return f[k] === '' || f[k] == null ? null : Number(f[k]); };
+  Object.keys(f).forEach(function (k) {
+    var v = n(k), rg = rangeOf(k); if (v == null) return;
+    if (isNaN(v)) return out.push(rg ? rg[2] + sideJa(k) + 'が数字になっていません' : k + 'が数字になっていません');
+    if (v === 0) return out.push((rg ? rg[2] + sideJa(k) : k) + 'が0です。測っていないなら空欄にしてください');
+    if (rg && (v < rg[0] || v > rg[1])) out.push(rg[2] + sideJa(k) + 'が ' + v + '。ふつうは' + rg[0] + '〜' + rg[1] + 'の間です');
+  });
+  ['L', 'R'].forEach(function (s) { var a = n('sh_ir_' + s), b = n('sh_er_' + s); if (a != null && b != null && a > b) out.push('肩' + (s === 'L' ? '（左）' : '（右）') + 'の内旋（' + a + '）が外旋（' + b + '）より大きいです。内旋と外旋が逆になっていませんか'); });
+  if (n('ci') != null && n('ci') === n('ci100')) out.push('Concentric Impulse と Concentric Impulse – 100ms が同じ数字です。片方の入れまちがいではありませんか');
+  var t = function (a, b, lab) { var x = n(a), y = n(b); if (x != null && y != null && Math.abs(x - y) >= 30) out.push(lab + 'の左右の差が' + Math.abs(x - y) + '°あります。左右を逆に入れていませんか'); };
+  t('sh_er_L', 'sh_er_R', '肩の外旋'); t('hip_ir_L', 'hip_ir_R', '股関節の内旋');
+  return out;
+}
+function checkPitch(rows) {
+  var out = [];
+  rows.forEach(function (o, i) {
+    PF.forEach(function (k) {
+      if (k === 'axis' || o[k] === '' || o[k] == null) return;
+      var v = Number(o[k]), rg = RANGE[k];
+      if (isNaN(v)) out.push((i + 1) + '球目の' + rg[2] + 'が数字になっていません');
+      else if (v < rg[0] || v > rg[1]) out.push((i + 1) + '球目の' + rg[2] + 'が ' + v + '。ふつうは' + rg[0] + '〜' + rg[1] + 'の間です');
+    });
+    if (o.axis && !/^\d{1,2}:\d{2}$/.test(o.axis)) out.push((i + 1) + '球目の回転軸「' + o.axis + '」は「1:30」の形で入れてください');
+  });
+  return out;
+}
+function warnBox(id, list, onOk) {
+  $(id).innerHTML = '<div class="chk"><b>⚠️ 保存の前に確かめてください</b><ul>' + list.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul><button class="ghost" data-a="fix">直す</button> <button class="primary" data-a="ok">このまま保存</button></div>';
+  $(id).querySelector('[data-a="fix"]').onclick = function () { $(id).innerHTML = ''; };
+  $(id).querySelector('[data-a="ok"]').onclick = function () { $(id).innerHTML = ''; onOk(); };
+  $(id).scrollIntoView({ block: 'center' });
+}
+async function savePitches(force) {
   var rows = Array.prototype.map.call($('newP').querySelectorAll('tr'), function (tr) {
     var o = {}; tr.querySelectorAll('[data-f]').forEach(function (e) { o[e.dataset.f] = e.value.trim(); });
-    o.src = tr.querySelector('.fromphoto') ? '写真' : '手入力'; return o;
+    o.src = tr.querySelector('.fromphoto') ? '写真' : '手入力'; o.photo = tr.dataset.photo || ''; return o;
   }).filter(function (o) { return o.speed || o.spin; });
   if (!rows.length) return toast('球速か回転数を入れてください');
+  var bad = force ? [] : checkPitch(rows);
+  if (bad.length) return warnBox('chkP', bad, function () { savePitches(true); });
   var w = who();
   $('saveP').disabled = true;
   try { await call('addPitches', { date: S.date, name: w.name, pos: w.pos, arm: w.arm, pitches: rows }); await reload(); toast(rows.length + '球を保存しました'); }
   catch (e) { toast(e.message, 5000); $('saveP').disabled = false; }
 }
-async function saveBody() {
-  var f = {}; document.querySelectorAll('.grid input[data-k]').forEach(function (e) { f[e.dataset.k] = e.value.trim(); });
+async function saveBody(force) {
+  var f = {}; document.querySelectorAll('input[data-k]').forEach(function (e) { f[e.dataset.k] = e.value.trim(); });
+  var bad = force ? [] : checkBody(f);
+  if (bad.length) return warnBox('chkB', bad, function () { saveBody(true); });
   var w = who();
   $('saveB').disabled = true;
   try { await call('saveBody', { date: S.date, name: w.name, pos: w.pos, arm: w.arm, fields: f }); await reload(); toast('保存しました。「' + (S.D.role === 'staff' ? '選手ごと' : '自分の結果') + '」で順位が見られます', 4000); }
@@ -282,17 +351,17 @@ function readPhoto(ev) {
     c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
     var data = c.toDataURL('image/jpeg', 0.85).split(',')[1];
     try {
-      var r = await call('readPhoto', { data: data, mediaType: 'image/jpeg' });
+      var w = who();
+      var r = await call('readPhoto', { data: data, mediaType: 'image/jpeg', date: S.date, name: w.name });
       var n = 0;
-      (r.pitches || []).forEach(function (p) { p.fromPhoto = true; addRow(p); n++; });
+      (r.pitches || []).forEach(function (p) { p.fromPhoto = true; p.photo = r.photo || ''; addRow(p); n++; });
       var m = 0;
       Object.keys(r.body || {}).forEach(function (k) {
-        var v = r.body[k], e = document.querySelector('.grid input[data-k="' + k + '"]');
+        var v = r.body[k], e = document.querySelector('input[data-k="' + k + '"]');
         if (v != null && e) { e.value = v; e.classList.add('fromphoto'); m++; }
       });
-      // 空の手入力行は消す
       Array.prototype.forEach.call($('newP').querySelectorAll('tr'), function (tr) { if (!tr.querySelector('.fromphoto') && !Array.prototype.some.call(tr.querySelectorAll('input'), function (i) { return i.value; })) tr.remove(); });
-      $('phOut').innerHTML = '<p class="ok">読み取れました：投球 ' + n + '球・体の数字 ' + m + '個（<span class="fromphoto-s">黄色の欄</span>）。数字を確かめてから「この球を保存」「体の数字を保存」を押してください。</p>' + (r.note ? '<p class="note">メモ：' + esc(r.note) + '</p>' : '');
+      $('phOut').innerHTML = '<p class="ok">読み取れました：投球 ' + n + '球・体の数字 ' + m + '個（<span class="fromphoto-s">黄色の欄</span>）。数字を確かめてから「この球を保存」「体の数字を保存」を押してください。</p>' + (r.note ? '<p class="note">メモ：' + esc(r.note) + '</p>' : '') + (r.photo ? '' : '<p class="note">（写真の保存はできませんでした。数字の読み取りには影響ありません）</p>');
     } catch (e) { $('phOut').innerHTML = '<p class="warn">' + esc(e.message) + '</p>'; }
     URL.revokeObjectURL(url); ev.target.value = '';
   };
@@ -355,11 +424,17 @@ var QUALITY_PLAN = {
   '垂れスラ系': { plan: '打者の予測から外れやすい珍しい球質。<b>打たせて取る</b>。直球も変化球も低めに。積極的に振ってくるチームと相性がよい。', ok: ['CB', 'SL', '2S', 'CH'], maybe: [] },
   'その他': { plan: '縦45〜47cm・横8〜10cmの<b>境目</b>にいます。次の測定で近いほうに寄れば、その型として読めます。', ok: [], maybe: [] }
 };
+// ストレートの区分（ピッチングマスタークラスの講義：インチ→cm）
+// 縦：垂れ ≤10in(25.4) ／ 標準 14〜16in(35.6〜40.6) ／ 伸び ≥18in(45.7)。すき間は「◯◯と◯◯の間」
+// 横：カット ≤8in(20.3) ／ 標準 8〜12in ／ シュート ≥12in(30.5)
+var FB_V = [['伸び', 45.7, 75], ['標準と伸びの間', 40.6, 45.7], ['標準', 35.6, 40.6], ['垂れと標準の間', 25.4, 35.6], ['垂れ', 0, 25.4]];
+var FB_H = [['カット寄り', -15, 20.3], ['標準', 20.3, 30.5], ['シュート寄り', 30.5, 60]];
 function fbClass(r) {
   if (r.vb == null || r.hb == null) return null;
-  var h = r.arm === '左投げ' ? -r.hb : r.hb;
-  var vi = r.vb >= 47 ? 0 : r.vb >= 39 ? 1 : 2, hi = h <= 8.5 ? 0 : h < 29.5 ? 1 : 2;
-  return { v: ['伸び', '標準', '垂れ'][vi], h: ['スライダー寄り', '標準', 'シュート寄り'][hi], vi: vi, hi: hi };
+  var h = r.arm === '左投げ' ? -r.hb : r.hb, vi = 0, hi = 0;
+  FB_V.forEach(function (b, i) { if (r.vb >= b[1] && r.vb < b[2]) vi = i; }); if (r.vb >= 75) vi = 0; if (r.vb < 0) vi = 4;
+  FB_H.forEach(function (b, i) { if (h >= b[1] && h < b[2]) hi = i; }); if (h >= 60) hi = 2; if (h < -15) hi = 0;
+  return { v: FB_V[vi][0], h: FB_H[hi][0], vi: vi, hi: hi };
 }
 function pitchPlan(r) {
   var q = qualityOf(r); if (!q) return null;
@@ -456,14 +531,13 @@ function movement(r) {
   var W = 300, c = 150, s = 150 / 70;
   var h = '<svg class="move" viewBox="0 0 300 300" role="img" aria-label="変化量の地図"><rect class="mv-bg" x="0" y="0" width="300" height="300"/>';
   [-60, -30, 30, 60].forEach(function (v) { h += '<line class="mv-grid" x1="' + (c + v * s) + '" y1="0" x2="' + (c + v * s) + '" y2="300"/><line class="mv-grid" x1="0" y1="' + (c - v * s) + '" x2="300" y2="' + (c - v * s) + '"/>'; });
-  // ストレートの区分（右投手基準の cm）：縦＝伸び/標準/垂れ、横＝スライダー寄り/標準/シュート寄り
-  var VB = [['伸び', 47, 70], ['標準', 39, 47], ['垂れ', 15, 39]], HB = [['スライダー寄り', -10, 8.5], ['標準', 8.5, 29.5], ['シュート寄り', 29.5, 60]];
-  VB.forEach(function (v, vi) { HB.forEach(function (hh, hi) {
-    var x1 = c + hh[1] * s, x2 = c + hh[2] * s, y1 = c - v[2] * s, y2 = c - v[1] * s;
+  // ストレートの区分（講義の定義・右投手基準の cm）
+  FB_V.forEach(function (v, vi) { FB_H.forEach(function (hh, hi) {
+    var x1 = c + hh[1] * s, x2 = c + hh[2] * s, y1 = c - Math.min(v[2], 70) * s, y2 = c - Math.max(v[1], 12) * s;
     h += '<rect class="fz fz-v' + vi + ' fz-h' + hi + '" x="' + x1 + '" y="' + y1 + '" width="' + (x2 - x1) + '" height="' + (y2 - y1) + '"/>';
   }); });
-  VB.forEach(function (v) { h += '<text class="fz-lab" x="' + (c + 60 * s - 3) + '" y="' + (c - (v[1] + v[2]) / 2 * s + 3) + '" text-anchor="end">' + v[0] + '</text>'; });
-  HB.forEach(function (hh) { h += '<text class="fz-lab2" x="' + (c + (hh[1] + hh[2]) / 2 * s) + '" y="' + (c - 15 * s + 10) + '" text-anchor="middle">' + hh[0] + '</text>'; });
+  FB_V.forEach(function (v) { if (v[0].indexOf('間') >= 0) return; h += '<text class="fz-lab" x="' + (c + 60 * s - 3) + '" y="' + (c - (Math.max(v[1], 12) + Math.min(v[2], 70)) / 2 * s + 3) + '" text-anchor="end">' + v[0] + '</text>'; });
+  FB_H.forEach(function (hh) { h += '<text class="fz-lab2" x="' + (c + (hh[1] + hh[2]) / 2 * s) + '" y="' + (c - 12 * s + 10) + '" text-anchor="middle">' + hh[0] + '</text>'; });
   h += '<line class="mv-axis" x1="150" y1="0" x2="150" y2="300"/><line class="mv-axis" x1="0" y1="150" x2="300" y2="150"/>';
   h += '<text class="mv-t" x="154" y="12">伸びる ↑</text><text class="mv-t" x="154" y="296">落ちる ↓</text><text class="mv-t" x="296" y="146" text-anchor="end">シュート →</text><text class="mv-t" x="4" y="146">← スライド</text>';
   ps.forEach(function (p) { var x = c + Math.max(-70, Math.min(70, p.x)) * s, y = c - Math.max(-70, Math.min(70, p.y)) * s; h += '<circle class="mv-dot mv-' + (p.t === 'ST' ? 'st' : 'other') + '" cx="' + x + '" cy="' + y + '" r="9"/><text class="mv-lab" x="' + x + '" y="' + (y + 4) + '" text-anchor="middle">' + p.t + '</text>'; });
@@ -548,14 +622,14 @@ function drawPlayer(n) {
   h += '<section class="romcheck"><h3>チェック</h3><ul>' + rr.map(function (c) { return '<li class="' + c.st + '"><span class="rc-st">' + romCell(c) + '</span><span class="rc-l">' + c.label + (c.val != null ? '：<b>' + c.val + (typeof c.val === 'number' ? '°' : '') + '</b>' : '') + '</span><small>' + c.why + '</small></li>'; }).join('') + '</ul></section>';
   // 球の中身
   var FB = fbClass(last);
-  h += '<h2 class="grp">球の中身（順位はつけない）</h2><section class="pitchsec"><div class="pitch-flex"><div>' + movement(last) + '<p class="note">点＝球種ごとの平均。色の帯＝ストレートの区分（縦：伸び・標準・垂れ／横：スライダー寄り・標準・シュート寄り）。上ほど「伸びる」、右ほど「シュート」' + (last.arm === '左投げ' ? '（左投手なので左右を反転して表示）' : '') + '。</p></div><div class="pitch-info">' +
-    (FB ? '<div class="plan"><div class="plan-q">ストレートの変化量</div><p class="fb-cls"><span class="fbv fbv-' + FB.vi + '">縦：' + FB.v + '</span><span class="fbh fbh-' + FB.hi + '">横：' + FB.h + '</span></p><p class="note">縦 ' + fmt(last.vb) + 'cm・横 ' + fmt(last.hb) + 'cm（ストレートの平均）。縦は47cm以上＝伸び／39〜46cm＝標準／38cm以下＝垂れ。横は8cm以下＝スライダー寄り／9〜29cm＝標準／30cm以上＝シュート寄り' + (last.arm === '左投げ' ? '（左投手は左右を反転して判定）' : '') + '。</p></div>' : '');
+  h += '<h2 class="grp">球の中身（順位はつけない）</h2><section class="pitchsec"><div class="pitch-flex"><div>' + movement(last) + '<p class="note">点＝球種ごとの平均。色の帯＝ストレートの区分（縦：伸び・標準・垂れ／横：カット寄り・標準・シュート寄り）。上ほど「伸びる」、右ほど「シュート」' + (last.arm === '左投げ' ? '（左投手なので左右を反転して表示）' : '') + '。</p></div><div class="pitch-info">' +
+    (FB ? '<div class="plan"><div class="plan-q">ストレートの変化量</div><p class="fb-cls"><span class="fbv fbv-' + FB.vi + '">縦：' + FB.v + '</span><span class="fbh fbh-' + FB.hi + '">横：' + FB.h + '</span></p><p class="note">縦 ' + fmt(last.vb) + 'cm・横 ' + fmt(last.hb) + 'cm（ストレートの平均）。縦は18インチ（45.7cm）以上＝伸び／14〜16インチ（35.6〜40.6cm）＝標準／10インチ（25.4cm）以下＝垂れ。横は8インチ（20.3cm）以下＝カット寄り／8〜12インチ＝標準／12インチ（30.5cm）以上＝シュート寄り（ピッチングマスタークラスの定義）' + (last.arm === '左投げ' ? '（左投手は左右を反転して判定）' : '') + '。</p></div>' : '');
   ['eff', 'gyro', 'vb', 'hb'].forEach(function (k) {
     h += '<div class="pi"><span class="pi-n">' + EXPLAIN[k].s + '（ストレート）</span><span class="pi-v">' + fmt(last[k]) + '</span>' + (prev ? '<span class="pi-p">前回 ' + fmt(prev[k]) + '</span>' : '') + explain(k) + '</div>';
   });
-  h += '</div></div><details class="ex"><summary>球種ごとの数字（表）</summary><div class="scroll"><table><tr><th class="l">球種</th><th>球数</th><th>平均球速</th><th>最高球速</th><th>回転数</th><th>トゥルースピン</th><th>回転効率</th><th>ジャイロ</th><th>縦変化</th><th>横変化</th></tr>';
+  h += '</div></div><details class="ex"><summary>球種ごとの数字（表）</summary><div class="scroll"><table><tr><th class="l">球種</th><th>球数</th><th>平均球速</th><th>最高球速</th><th>回転数</th><th>トゥルースピン</th><th>回転効率</th><th>ジャイロ</th><th>縦変化</th><th>横変化</th><th>エクステンション</th><th>リリース高</th><th>リリース角(縦)</th></tr>';
   Object.keys(last.pitches).sort(function (a, b) { return a === 'ST' ? -1 : b === 'ST' ? 1 : 0; }).forEach(function (tt) {
-    var x = last.pitches[tt]; h += '<tr><td class="l">' + tt + '</td><td>' + x.n + '</td><td>' + fmt(x.speed) + '</td><td>' + fmt(x.speedMax) + '</td><td>' + fmt(x.spin, 'spin') + '</td><td>' + fmt(x.tspin, 'tspin') + '</td><td>' + fmt(x.eff) + '</td><td>' + fmt(x.gyro) + '</td><td>' + fmt(x.vb) + '</td><td>' + fmt(x.hb) + '</td></tr>';
+    var x = last.pitches[tt]; h += '<tr><td class="l">' + tt + '</td><td>' + x.n + '</td><td>' + fmt(x.speed) + '</td><td>' + fmt(x.speedMax) + '</td><td>' + fmt(x.spin, 'spin') + '</td><td>' + fmt(x.tspin, 'tspin') + '</td><td>' + fmt(x.eff) + '</td><td>' + fmt(x.gyro) + '</td><td>' + fmt(x.vb) + '</td><td>' + fmt(x.hb) + '</td><td>' + (x.ext == null ? '—' : x.ext.toFixed(2)) + '</td><td>' + (x.rh == null ? '—' : x.rh.toFixed(2)) + '</td><td>' + fmt(x.rva) + '</td></tr>';
   });
   h += '</table></div></details></section>';
   // これまでの推移
