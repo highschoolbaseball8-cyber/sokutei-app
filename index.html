@@ -56,6 +56,13 @@
 .lr-f input{width:100%;min-width:0;box-sizing:border-box;padding:6px;border:1px solid #c5ccd6;border-radius:6px;font-size:16px;text-align:right}
 .chk{margin:8px 0;padding:10px 12px;border:1px solid #f1d7ac;border-radius:10px;background:#fff8ec;font-size:13px}
 .chk ul{margin:6px 0 8px;padding-left:18px;color:#9a5200}
+/* 待ち時間のぐるぐる */
+.busy{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-top:10px;padding:12px;border-radius:10px;background:#fff;border:1px solid #d9e5f2}
+.busy small{flex-basis:100%;color:#5a6270;font-size:12px}
+.spin{display:inline-block;width:22px;height:22px;border:3px solid #d9e5f2;border-top-color:#1f3a5f;border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle}
+.spin.sm{width:14px;height:14px;border-width:2px;margin-right:6px;border-color:#ffffff55;border-top-color:#fff}
+button.mini .spin.sm{border-color:#c5ccd6;border-top-color:#1f3a5f;margin:0}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 
 <title>測定</title><meta name="robots" content="noindex"></head>
@@ -132,14 +139,12 @@ function nav() {
   $('nav').innerHTML = tabs.map(function (t) { return '<button data-v="' + t[0] + '" class="' + (S.view === t[0] ? 'on' : '') + '">' + t[1] + '</button>'; }).join('') +
     '<select id="selDate">' + DATES(true).map(function (d) { return '<option value="' + d + '"' + (d === S.date ? ' selected' : '') + '>' + JP(d) + (d === S.D.today ? '（今回）' : '') + '</option>'; }).join('') + '</select>' +
     (S.D.role === 'staff' && (S.view === 'player' || S.view === 'input') ? '<select id="selP">' + NAMES().map(function (n) { return '<option' + (n === S.player ? ' selected' : '') + '>' + esc(n) + '</option>'; }).join('') + '</select>' : '') +
-    '<button class="ghost" id="out">' + (S.D.role === 'staff' ? '出る' : esc(S.me ? S.me.name : '') + '・切替') + '</button>';
+    (S.D.role === 'staff' ? '' : '<button class="ghost" id="sw">' + esc(S.me ? S.me.name : '') + '・名前を変える</button>') + '<button class="ghost" id="out">ログアウト</button>';
   $('nav').querySelectorAll('button[data-v]').forEach(function (b) { b.onclick = function () { go(b.dataset.v); }; });
   $('selDate').onchange = function () { S.date = this.value; go(S.view); };
   if ($('selP')) $('selP').onchange = function () { S.player = this.value; go(S.view); };
-  $('out').onclick = function () {
-    if (S.D.role === 'staff') { localStorage.removeItem('nh_pin'); S.pin = ''; return drawLogin(); }
-    localStorage.removeItem('nh_me'); S.me = null; drawPickName();
-  };
+  $('out').onclick = function () { localStorage.removeItem('nh_pin'); localStorage.removeItem('nh_me'); S.pin = ''; S.me = null; drawLogin(); };
+  if ($('sw')) $('sw').onclick = function () { localStorage.removeItem('nh_me'); S.me = null; drawPickName(); };
 }
 function go(v) {
   S.view = v;
@@ -264,7 +269,7 @@ function drawInput() {
   $('saveB').onclick = function () { saveBody(false); };
   $('ph').onchange = readPhoto;
   document.querySelectorAll('button[data-del]').forEach(function (b) {
-    b.onclick = async function () { b.disabled = true; try { await call('deletePitch', { id: b.dataset.del }); await reload(); toast('消しました'); } catch (e) { toast(e.message); b.disabled = false; } };
+    b.onclick = async function () { b.disabled = true; b.innerHTML = '<span class="spin sm"></span>'; try { await call('deletePitch', { id: b.dataset.del }); await reload(); toast('消しました'); } catch (e) { toast(e.message); b.disabled = false; } };
   });
 }
 function addRow(p) {
@@ -327,23 +332,23 @@ async function savePitches(force) {
   var bad = force ? [] : checkPitch(rows);
   if (bad.length) return warnBox('chkP', bad, function () { savePitches(true); });
   var w = who();
-  $('saveP').disabled = true;
+  $('saveP').disabled = true; $('saveP').innerHTML = '<span class="spin sm"></span>保存しています…';
   try { await call('addPitches', { date: S.date, name: w.name, pos: w.pos, arm: w.arm, pitches: rows }); await reload(); toast(rows.length + '球を保存しました'); }
-  catch (e) { toast(e.message, 5000); $('saveP').disabled = false; }
+  catch (e) { toast(e.message, 5000); $('saveP').disabled = false; $('saveP').textContent = 'この球を保存'; }
 }
 async function saveBody(force) {
   var f = {}; document.querySelectorAll('input[data-k]').forEach(function (e) { f[e.dataset.k] = e.value.trim(); });
   var bad = force ? [] : checkBody(f);
   if (bad.length) return warnBox('chkB', bad, function () { saveBody(true); });
   var w = who();
-  $('saveB').disabled = true;
+  $('saveB').disabled = true; $('saveB').innerHTML = '<span class="spin sm"></span>保存しています…';
   try { await call('saveBody', { date: S.date, name: w.name, pos: w.pos, arm: w.arm, fields: f }); await reload(); toast('保存しました。「' + (S.D.role === 'staff' ? '選手ごと' : '自分の結果') + '」で順位が見られます', 4000); }
-  catch (e) { toast(e.message, 5000); $('saveB').disabled = false; }
+  catch (e) { toast(e.message, 5000); $('saveB').disabled = false; $('saveB').textContent = '体の数字を保存'; }
 }
 async function reload() { S.D = await call('bootstrap', { me: S.me && S.me.name }); build(); go(S.view); }
 function readPhoto(ev) {
   var file = ev.target.files[0]; if (!file) return;
-  $('phOut').innerHTML = '<p class="note">読み取り中…（10〜30秒）</p>';
+  $('phOut').innerHTML = '<div class="busy"><span class="spin"></span><b>写真を送って読み取っています…</b><small>10〜30秒かかります。この画面のまま待ってください</small></div>';
   var img = new Image(), url = URL.createObjectURL(file);
   img.onload = async function () {
     var max = 1600, s = Math.min(1, max / Math.max(img.width, img.height));
