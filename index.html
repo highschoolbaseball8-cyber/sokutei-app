@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+/* 見た目はここだけ。HTMLは生成物なので変更しない。 */
+:root{--navy:#1f3a5f;--ink:#1d2330;--muted:#5a6270;--line:#dde1e7;--paper:#fff;--ground:#f5f6f8;--up:#0a7d3b;--down:#c0392b;--gold:#e7a426;--silver:#9aa3b0;--bronze:#bd7140}*{box-sizing:border-box}body{margin:0;background:var(--ground);color:var(--ink);font:15px/1.5 -apple-system,"Hiragino Sans",sans-serif}header{background:#1f3a5f;color:#fff;padding:15px 16px 13px}header h1{margin:0;font-size:18px;line-height:1.2}header .sub{margin-top:4px;font-size:12px;opacity:.82}nav{position:sticky;top:0;z-index:5;display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:9px 12px;background:#fff;border-bottom:1px solid #dde1e7;box-shadow:0 1px 3px #1f3a5f12}nav button{padding:6px 12px;border:1px solid #c5ccd6;border-radius:18px;background:#fff;color:var(--ink);font-size:13px;cursor:pointer}nav button.on{background:#1f3a5f;border-color:#1f3a5f;color:#fff;font-weight:700}nav select{max-width:160px;padding:5px;border:1px solid #c5ccd6;border-radius:7px;background:#fff;font-size:13px}nav .ghost{margin-left:auto}main{max-width:1120px;margin:auto;padding:12px 12px 42px}section{margin:0 0 12px;padding:13px;border:1px solid #e9ecf0;border-radius:12px;background:#fff;box-shadow:0 1px 2px #1d23300c}h2{margin:0 0 8px;font-size:16px;line-height:1.35}h3{margin:14px 0 6px;color:#1f3a5f;font-size:14px}.grp{grid-column:1/-1;margin:13px 2px 1px;color:#1f3a5f;font-size:16px}.note{margin:5px 0;color:#5a6270;font-size:12px;line-height:1.6}a{color:#164fc0;font-weight:650}.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:7px 6px;border-bottom:1px solid #e6e9ee;text-align:right;white-space:nowrap}th{background:#f0f2f5;color:#394556;font-weight:700;cursor:default}th.sort{cursor:pointer}td.l,th.l{text-align:left}tr.me td{background:#fff9e6}.dev{display:inline-block;min-width:34px;padding:1px 5px;border-radius:5px;text-align:center;font-weight:750}.d1{background:#d6e6f5}.d2{background:#eef2f6}.d3{background:#fff4d6}.d4{background:#ffe0b8}.d5{background:#ffc98c}.up{color:#0a7d3b;font-weight:750}.down{color:#c0392b;font-weight:750}.flat,.ref{color:#666}.ok{color:#0a7d3b}.warn{color:#b35c00;font-weight:700}.none{color:#8b95a1}.bar{position:relative;min-width:120px;height:14px;border-radius:7px;background:#eef2f6}.bar .mid{position:absolute;top:0;bottom:0;left:50%;border-left:1px dashed #9aa3b0}.bar .p{position:absolute;top:2px;width:10px;height:10px;margin-left:-5px;border-radius:50%}.bar .p.a{background:#9aa3b0}.bar .p.b{background:#1f3a5f}.cards{display:flex;gap:10px;flex-wrap:wrap}.card{flex:1 1 140px;padding:10px;border-radius:8px;background:#f5f6f8}.card .t{font-size:12px;color:#5a6270}.big{font-size:28px;font-weight:750}ul{margin:4px 0;padding-left:20px}li{margin:3px 0;line-height:1.5}
+/* 入力 */button.primary,.filebtn{display:inline-block;padding:10px 16px;border:0;border-radius:8px;background:#1f3a5f;color:#fff;font-size:15px;font-weight:700;cursor:pointer}button.ghost{padding:8px 12px;border:1px solid #c5ccd6;border-radius:8px;background:#fff;font-size:14px}button.mini{padding:3px 8px;border:1px solid #c5ccd6;border-radius:6px;background:#fff;font-size:12px}button.wide{width:100%}button:disabled{opacity:.5}.big-in{display:block;width:100%;margin:8px 0;padding:10px;border:1px solid #c5ccd6;border-radius:8px;font-size:18px}.row{display:flex;gap:12px;flex-wrap:wrap;margin:8px 0}.row select{padding:6px;font-size:16px}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px}.fld{display:grid;grid-template-columns:1fr 90px 40px;gap:6px;align-items:center;padding:7px 8px;border-radius:8px;background:#f5f6f8}.fld span{font-size:14px}.fld small{display:block;color:#5a6270;font-size:11px}.fld input{width:100%;padding:6px;border:1px solid #c5ccd6;border-radius:6px;text-align:right;font-size:16px}.fld em{color:#5a6270;font-size:12px;font-style:normal}#newP input,#newP select{box-sizing:border-box;width:64px;padding:5px;border:1px solid #c5ccd6;border-radius:6px;font-size:15px}.fromphoto,input.fromphoto{background:#fff6c2!important}.fromphoto-s{padding:0 4px;background:#fff6c2}.photo{margin-top:8px;padding:10px 12px;border-radius:10px;background:#eef4fb}.sticky{position:sticky;bottom:0;z-index:2;background:#fffffff0;backdrop-filter:blur(5px)}td.part{color:#b35c00}td.warn{color:#c0392b}#toast{position:fixed;bottom:24px;left:50%;z-index:10;max-width:90%;padding:10px 16px;border-radius:8px;background:#1d2330;color:#fff;font-size:14px;opacity:0;pointer-events:none;transform:translateX(-50%);transition:opacity .2s}#toast.on{opacity:.95}
+/* 選手カード・レーダー */.hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(250px,340px);gap:8px;align-items:center;padding:16px;border:0;background:linear-gradient(135deg,#1f3a5f,#294b78);color:#fff;box-shadow:0 5px 16px #1f3a5f33}.hero-l{min-width:0}.hero-name{font-size:26px;font-weight:800;letter-spacing:.03em}.hero-meta{margin-top:2px;color:#ffffffcc;font-size:13px}.hero-score{display:flex;gap:8px;align-items:baseline;margin:12px 0 9px}.hs-label{color:#dce8f7;font-size:13px}.hs-num{font-size:52px;font-weight:800;line-height:.9;letter-spacing:-.06em}.hero-score .chg{color:#fff;background:#ffffff29}.hero-tags{display:flex;gap:6px;flex-wrap:wrap}.tag{display:inline-block;max-width:100%;padding:3px 8px;border-radius:999px;font-size:12px;font-weight:700;line-height:1.35}.tag.good{background:#dff4e7;color:#176438}.tag.work{background:#fff0d8;color:#9a5200}.hero-r{text-align:center}.radar{display:block;width:100%;max-width:340px;height:auto;margin:auto;overflow:visible}.ring{fill:none;stroke:#ffffff38;stroke-width:1}.ring50{stroke:#ffffffb8;stroke-width:1.7}.spoke{stroke:#ffffff2e;stroke-width:1}.now{fill:#ffca696b;stroke:#ffce70;stroke-width:2.5}.now-dot{fill:#fff3ca;stroke:#d38620;stroke-width:1.5}.prev{fill:none;stroke:#d9e5f2;stroke-width:1.5;stroke-dasharray:5 4}.prev-dot{fill:#d9e5f2}.rlabel{fill:#fff;font-size:10px;font-weight:700;paint-order:stroke;stroke:#1f3a5f;stroke-width:2px}.rval{fill:#ffdc94;font-size:11px;font-weight:800}.legend{display:flex;justify-content:center;gap:4px;align-items:center;flex-wrap:wrap;margin-top:-4px;color:#eaf1f8;font-size:11px}.legend i{display:inline-block;width:10px;height:10px;margin-left:5px;border-radius:50%}.lg-now{background:#ffce70}.lg-prev{border:1px dashed #d9e5f2}
+/* 数値・可動域 */.cards2{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px;align-items:stretch}.mcard{display:flex;position:relative;min-width:0;flex-direction:column;margin:0;padding:12px;border-top:3px solid #dfe7f0;border-radius:11px}.mc-h{display:flex;gap:8px;justify-content:space-between;align-items:baseline}.mc-name{font-size:15px;font-weight:800}.mc-en{color:#5a6270;font-size:11px;text-align:right}.mc-body{display:flex;gap:8px;justify-content:space-between;align-items:baseline;margin-top:5px}.mc-val{font-size:27px;font-weight:800;letter-spacing:-.04em;line-height:1.1}.mc-val small,.rc-val small{margin-left:3px;font-size:12px;font-weight:600;letter-spacing:0}.chg{display:inline-block;padding:2px 6px;border-radius:999px;font-size:12px;white-space:nowrap}.chg.up{background:#e2f5e9}.chg.down{background:#fae7e5}.chg.flat{background:#eef2f6}.mc-rank{display:flex;gap:8px;justify-content:space-between;margin-top:7px;color:#5a6270;font-size:12px}.mc-rank b{color:#1d2330}.meter{position:relative;height:8px;overflow:hidden;margin-top:7px;border-radius:99px;background:linear-gradient(90deg,#d6e6f5,#eef2f6,#fff4d6,#ffe0b8,#ffc98c)}.meter-mid{position:absolute;z-index:2;top:-2px;bottom:-2px;left:50%;border-left:2px solid #697786}.meter-fill{position:absolute;z-index:1;top:0;bottom:0;left:0;border-radius:99px;opacity:.7}.meter-fill.d1{background:#80b2dd}.meter-fill.d2{background:#b8c3ce}.meter-fill.d3{background:#f3c967}.meter-fill.d4{background:#ed9a50}.meter-fill.d5{background:#df7138}.ex{margin-top:9px;border-top:1px solid #e7ebef;color:#5a6270;font-size:12px}.ex summary{display:inline-block;margin-top:7px;padding:2px 7px;border-radius:5px;color:#245792;cursor:pointer;font-weight:700;list-style:none}.ex summary::-webkit-details-marker{display:none}.ex summary:before{content:'▸ ';font-size:10px}.ex[open] summary:before{content:'▾ '}.ex p{margin:7px 0;line-height:1.6}.ex-calc{padding:7px;border-radius:6px;background:#f0f6fc;color:#254463;font-weight:700}.history{margin:0 0 12px;padding:0 13px 10px;background:#fff;border:1px solid #e9ecf0;border-radius:12px}.rcard{position:relative;min-height:132px;overflow:hidden;margin:0;padding:12px 12px 10px 16px;border-left:5px solid #aeb8c4;border-radius:10px}.rcard.ok{background:#f5fbf7;border-left-color:#50a874}.rcard.warn{background:#fff8ec;border-left-color:#dc942c}.rcard.ref{background:#f6f7f9;border-left-color:#9aa3b0}.rcard.none{background:#fafafa;border-left-color:#c5ccd6}.rc-h{font-size:13px;font-weight:800}.rc-body{display:flex;gap:8px;justify-content:space-between;align-items:baseline;margin-top:8px}.rc-val{font-size:26px;font-weight:800;line-height:1}.rc-prev{margin-top:6px;color:#5a6270;font-size:12px}.rc-why{margin:6px 0 0;color:#5a6270;font-size:12px;line-height:1.45}
+/* 球質 */.pitchsec{padding:14px}.pitch-flex{display:grid;grid-template-columns:minmax(230px,300px) minmax(0,1fr);gap:14px;align-items:start}.move{display:block;width:100%;max-width:300px;height:auto;border-radius:9px}.mv-bg{fill:#f7f9fb}.mv-grid{stroke:#dce3eb;stroke-width:1}.mv-axis{stroke:#8798aa;stroke-width:1.3}.mv-t{fill:#667587;font-size:10px}.mv-dot{stroke:#fff;stroke-width:2}.mv-st{fill:#ed8b3a}.mv-other{fill:#3975b8}.mv-lab{fill:#fff;font-size:8px;font-weight:800}.pitch-info{display:grid;gap:7px}.pi{padding:8px 9px;border-radius:8px;background:#f5f7fa}.pi-n{display:block;font-size:12px;font-weight:800}.pi-v{margin-right:8px;font-size:21px;font-weight:800}.pi-p{color:#5a6270;font-size:12px}.pi .ex{margin-top:4px}
+/* 順位 */.filters{padding:11px 12px}.frow{display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin:4px 0}.flabel{width:58px;color:#5a6270;font-size:12px;font-weight:800}.chip{padding:4px 10px;border:1px solid #cbd3dd;border-radius:999px;background:#fff;color:#3c4858;font-size:12px;cursor:pointer}.chip.on{border-color:#1f3a5f;background:#1f3a5f;color:#fff;font-weight:700}.boards{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:12px}.board{margin:0;padding:12px}.board-h{display:flex;gap:8px;justify-content:space-between;align-items:baseline;padding-bottom:7px;border-bottom:1px solid #e7ebef}.board-h h2{margin:0;font-size:15px}.board-sub{color:#5a6270;font-size:11px;text-align:right}.rank{margin:7px 0 0;padding:0;list-style:none}.rank li{display:grid;grid-template-columns:25px minmax(66px,1fr) minmax(54px,1.4fr) auto;grid-template-areas:"pos who bar val" "pos sub sub sub";column-gap:7px;align-items:center;margin:0;padding:7px 4px;border-bottom:1px solid #edf0f3;line-height:1.25}.rank li.me{margin:1px -3px;padding-right:7px;padding-left:7px;border-radius:7px;background:#fff4ce}.pos{display:grid;grid-area:pos;place-items:center;width:23px;height:23px;border-radius:50%;background:#e7edf3;color:#415367;font-size:12px;font-weight:800}.top1 .pos{background:#e7a426;color:#fff}.top2 .pos{background:#9aa3b0;color:#fff}.top3 .pos{background:#bd7140;color:#fff}.who{grid-area:who;overflow:hidden;font-size:13px;font-weight:800;text-overflow:ellipsis;white-space:nowrap}.who small{margin-left:3px;color:#5a6270;font-size:10px;font-weight:500}.bar-wrap{grid-area:bar;height:8px;overflow:hidden;border-radius:99px;background:#edf1f5}.rbar{display:block;min-width:6px;height:100%;border-radius:99px}.rbar.d1{background:#80b2dd}.rbar.d2{background:#aebac5}.rbar.d3{background:#e7bd59}.rbar.d4{background:#e6954d}.rbar.d5{background:#dc743d}.val{grid-area:val;text-align:right;font-size:14px;font-weight:800;white-space:nowrap}.sub2{grid-area:sub;min-height:14px;color:#5a6270;font-size:11px}.sub2 .chg{padding:0;background:transparent}.romwarn{border-color:#f1d7ac}.romwarn ul{margin:3px 0;padding-left:18px}
+@media(max-width:620px){main{padding:10px 10px 34px}section{padding:12px}.hero{grid-template-columns:1fr;padding:14px}.hero-r{order:2}.radar{max-width:310px}.hero-name{font-size:24px}.hs-num{font-size:50px}.cards2,.boards{grid-template-columns:1fr}.pitch-flex{grid-template-columns:1fr}.move{margin:auto}.rank li{grid-template-columns:24px minmax(55px,1fr) minmax(45px,1.1fr) auto;column-gap:5px;padding:7px 1px}.val{font-size:13px}.flabel{width:54px}.mc-val{font-size:28px}}@media(max-width:350px){nav{padding:8px}nav button{padding:6px 9px;font-size:12px}.hero-tags{display:block}.tag{margin:2px 2px 2px 0}.rank li{grid-template-columns:23px minmax(47px,1fr) minmax(35px,1fr) auto}.who{font-size:12px}.board{padding:10px}.board-sub{font-size:10px}}@media(min-width:760px){main{padding:18px 20px 48px}.hero{grid-template-columns:minmax(250px,1fr) 340px}.cards2,.boards{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(min-width:1050px){.cards2{grid-template-columns:repeat(3,minmax(0,1fr))}}@media print{nav{display:none}body{background:#fff}section{box-shadow:none;break-inside:avoid}.hero{color:#1d2330;background:#fff;border:1px solid #dde1e7}.hero-meta,.legend{color:#5a6270}.ring{stroke:#9aa3b0}.spoke{stroke:#c5ccd6}.rlabel{fill:#1d2330;stroke:#fff}.rval{fill:#9a5200}}
+/* Claudeの直し：紺地の上の前回差を読めるように */.hero .chg{background:#fff;font-weight:800}.hero .chg.down{color:#c0392b}.hero .chg.up{color:#0a7d3b}
+
+/* Claude追加（11/16 v3）：見立て・左右の可動域・変化球の提案。色はCodexの配色から選んだもの */
+.dg-type{margin-top:9px;font-size:13px;line-height:1.55;color:#ffffffcc}.dg-type b{color:#fff}
+.dg-badge{display:inline-block;margin-right:6px;padding:2px 9px;border-radius:999px;background:#fff;color:#1f3a5f;font-size:12px;font-weight:800}
+.diag h2{margin:0 0 8px;font-size:16px;color:#1f3a5f}
+.dg-h{margin:2px 0 4px;font-size:13px;font-weight:800;color:#9a5200}
+.dg-list{margin:0 0 8px;padding-left:18px;font-size:13px;line-height:1.6}
+.dg-line{margin:8px 0;padding:8px 10px;border-left:4px solid #3975b8;border-radius:8px;background:#f0f6fc;font-size:13px}
+.dg-line p{margin:3px 0 0;line-height:1.6}
+.dg-line.risk{border-left-color:#c0392b;background:#fae7e5}
+.rjoints{display:grid;grid-template-columns:1fr;gap:10px}
+.rjoint{margin:0;padding:12px}
+.rj-h{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px;align-items:baseline;margin-bottom:8px;font-weight:800;color:#1f3a5f}
+.rj-ref{font-size:11px;font-weight:500;color:#5a6270}
+.rj-lr{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.rj-side{padding:8px 10px;border:1px solid #e7ebef;border-radius:10px;background:#f7f9fb}
+.rj-side.key{border-color:#3975b8;background:#f0f6fc}
+.rj-sh{display:flex;align-items:center;gap:6px;margin-bottom:6px}.rj-sh b{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:#1f3a5f;color:#fff;font-size:14px}
+.rj-tag{padding:1px 7px;border-radius:999px;background:#fff0d8;color:#9a5200;font-size:11px;font-weight:800}
+.rj-row{display:grid;grid-template-columns:auto 1fr;align-items:baseline;gap:0 6px;padding:3px 0;border-top:1px dashed #e7ebef}
+.rj-k{font-size:12px;color:#5a6270}.rj-v{text-align:right;font-size:18px;font-weight:800}.rj-v.low{color:#c0392b}
+.rj-p{grid-column:1/-1;text-align:right;font-size:11px;color:#8b95a1}
+.romcheck h3{margin:0 0 6px}.romcheck ul{margin:0;padding:0;list-style:none}
+.romcheck li{display:grid;grid-template-columns:auto 1fr;gap:2px 8px;padding:7px 0;border-bottom:1px solid #edf0f3;font-size:13px}
+.romcheck li small{grid-column:2;color:#5a6270;font-size:11px;line-height:1.5}
+.romcheck li.warn{background:#fff8ec}
+.plan{margin-bottom:10px;padding:10px 12px;border-radius:10px;background:#f0f6fc;font-size:13px;line-height:1.6}
+.plan-q{font-size:14px;color:#1f3a5f}.plan p{margin:5px 0}
+.plan-have{color:#176438}.plan-want{color:#1f3a5f;font-weight:700}.plan-maybe{color:#5a6270}
+.mv-want{fill:#ffffffb8;stroke:#3975b8;stroke-width:2;stroke-dasharray:4 3}.mv-want.maybe{stroke:#aeb8c4}
+.mv-wlab{fill:#245792;font-size:9px;font-weight:800}
+@media(min-width:760px){.rjoints{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* ストレートの区分の色帯（縦：伸び=青・標準=緑・垂れ=橙、横は濃さで分ける） */
+.fz{stroke:#fff;stroke-width:1}.fz-v0{fill:#dce8f7}.fz-v1{fill:#dff4e7}.fz-v2{fill:#fff0d8}
+.fz-v0.fz-h1{fill:#d9e5f2}.fz-v1.fz-h1{fill:#e2f5e9}.fz-v2.fz-h1{fill:#fff3ca}
+.fz-h0,.fz-h2{opacity:.65}
+.fz-lab{fill:#245792;font-size:9px;font-weight:800}.fz-lab2{fill:#5a6270;font-size:8px}
+.fb-cls{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}.fb-cls span{padding:3px 10px;border-radius:999px;font-size:13px;font-weight:800}
+.fbv-0{background:#dce8f7;color:#245792}.fbv-1{background:#dff4e7;color:#176438}.fbv-2{background:#fff0d8;color:#9a5200}
+.fbh-0,.fbh-2{background:#f0f2f5;color:#394556}.fbh-1{background:#e2f5e9;color:#176438}
+</style>
+
+<title>測定</title><meta name="robots" content="noindex"></head>
+<body>
+<header><h1 id="title">測定</h1><div class="sub" id="sub"></div></header>
+<nav id="nav"></nav>
+<main id="main"><section><p>読み込み中…</p></section></main>
+<div id="toast"></div>
+<script>window.API_URL = "https://script.google.com/macros/s/AKfycbwLK1pqI8R41ZZtuhxDDVJoAth0fC_oNyAPPbvxGAXX63WsG-BUD-T4oJyVUkppNn3q/exec";</script>
+<script>
+// ===== サーバーとのやりとり =====
+var API_URL = window.API_URL || '';
+function call(action, payload) {
+  if (!window.google || !google.script) {
+    return fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ pin: S.pin, action: action, payload: payload || {} }) })
+      .then(function (r) { return r.json(); }).then(function (r) { if (r && r.ok) return r.data; throw new Error(r ? r.error : '通信エラー'); });
+  }
+  return new Promise(function (ok, ng) {
+    google.script.run.withSuccessHandler(function (r) { r && r.ok ? ok(r.data) : ng(new Error(r ? r.error : '通信エラー')); })
+      .withFailureHandler(ng).api(S.pin, action, payload || {});
+  });
+}
+var S = { f: { pos: 'all', arm: 'all', grp: 'all' }, pin: localStorage.getItem('nh_pin') || '', me: JSON.parse(localStorage.getItem('nh_me') || 'null'), view: '', date: '', player: '', D: null, sortK: 'total', photo: null };
+var $ = function (id) { return document.getElementById(id); };
+function toast(t, ms) { var e = $('toast'); e.textContent = t; e.className = 'on'; clearTimeout(toast.t); toast.t = setTimeout(function () { e.className = ''; }, ms || 2500); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+var JP = function (d) { var a = d.split('-'); return a[0] + '年' + (+a[1]) + '月' + (+a[2]) + '日'; };
+var SH = function (d) { var a = d.split('-'); return (+a[1]) + '/' + (+a[2]); };
+var N = function (v) { return v === '' || v == null || isNaN(+v) ? null : +v; };
+
+// ===== 入口 =====
+async function start() {
+  if (!S.pin) return drawLogin();
+  try {
+    S.D = await call('bootstrap', { me: S.me && S.me.name });
+    build();
+    S.date = S.D.today;
+    if (S.D.role === 'player' && !S.me) return drawPickName();
+    go(S.D.role === 'staff' ? 'status' : 'input');
+  } catch (e) {
+    if (String(e.message).indexOf('PIN_NG') >= 0) { localStorage.removeItem('nh_pin'); S.pin = ''; return drawLogin('暗証番号がちがいます'); }
+    main('<section><p class="warn">' + esc(e.message) + '</p></section>');
+  }
+}
+function main(h) { $('main').innerHTML = h; window.scrollTo(0, 0); }
+function drawLogin(msg) {
+  $('nav').innerHTML = '';
+  main('<section><h2>暗証番号</h2><p class="note">選手はチームの番号、先生・トレーナーはスタッフ用の番号を入れてください。</p>' +
+    '<input id="pin" type="password" inputmode="numeric" class="big-in" autocomplete="off"><button class="primary" id="go">入る</button>' +
+    (msg ? '<p class="warn">' + esc(msg) + '</p>' : '') + '</section>');
+  $('go').onclick = function () { S.pin = $('pin').value.trim(); localStorage.setItem('nh_pin', S.pin); start(); };
+}
+function drawPickName() {
+  var names = NAMES();
+  main('<section><h2>あなたの名前</h2><p class="note">去年測った人は一覧から。初めての人は「新しく入力」に書いてください。</p>' +
+    '<select id="nm" class="big-in"><option value="">— 選ぶ —</option>' + names.map(function (n) { return '<option>' + esc(n) + '</option>'; }).join('') + '</select>' +
+    '<input id="nm2" class="big-in" placeholder="新しく入力（フルネーム・漢字）">' +
+    '<div class="row"><label>ポジション <select id="pos"><option>投手</option><option>野手</option></select></label>' +
+    '<label>投げる腕 <select id="arm"><option>右投げ</option><option>左投げ</option></select></label></div>' +
+    '<button class="primary" id="ok">これで始める</button></section>');
+  $('nm').onchange = function () { var r = latest($('nm').value); if (r) { $('pos').value = r.pos || '投手'; $('arm').value = r.arm || '右投げ'; } };
+  $('ok').onclick = function () {
+    var n = ($('nm2').value || $('nm').value).trim().replace(/\s+/g, '');
+    if (!n) return toast('名前を選ぶか入力してください');
+    S.me = { name: n, pos: $('pos').value, arm: $('arm').value };
+    localStorage.setItem('nh_me', JSON.stringify(S.me));
+    start();
+  };
+}
+function nav() {
+  var tabs = S.D.role === 'staff'
+    ? [['status', '入力状況'], ['team', 'チーム'], ['player', '選手ごと'], ['input', '入力する'], ['about', '項目の説明']]
+    : [['input', '入力する'], ['mine', '自分の結果'], ['team', 'チームの順位'], ['about', '項目の説明']];
+  $('nav').innerHTML = tabs.map(function (t) { return '<button data-v="' + t[0] + '" class="' + (S.view === t[0] ? 'on' : '') + '">' + t[1] + '</button>'; }).join('') +
+    '<select id="selDate">' + DATES(true).map(function (d) { return '<option value="' + d + '"' + (d === S.date ? ' selected' : '') + '>' + JP(d) + (d === S.D.today ? '（今回）' : '') + '</option>'; }).join('') + '</select>' +
+    (S.D.role === 'staff' && (S.view === 'player' || S.view === 'input') ? '<select id="selP">' + NAMES().map(function (n) { return '<option' + (n === S.player ? ' selected' : '') + '>' + esc(n) + '</option>'; }).join('') + '</select>' : '') +
+    '<button class="ghost" id="out">' + (S.D.role === 'staff' ? '出る' : esc(S.me ? S.me.name : '') + '・切替') + '</button>';
+  $('nav').querySelectorAll('button[data-v]').forEach(function (b) { b.onclick = function () { go(b.dataset.v); }; });
+  $('selDate').onchange = function () { S.date = this.value; go(S.view); };
+  if ($('selP')) $('selP').onchange = function () { S.player = this.value; go(S.view); };
+  $('out').onclick = function () {
+    if (S.D.role === 'staff') { localStorage.removeItem('nh_pin'); S.pin = ''; return drawLogin(); }
+    localStorage.removeItem('nh_me'); S.me = null; drawPickName();
+  };
+}
+function go(v) {
+  S.view = v;
+  if (!S.player) S.player = S.me ? S.me.name : NAMES()[0];
+  $('title').textContent = S.D.team + ' 測定';
+  $('sub').textContent = S.D.role === 'staff' ? '先生・トレーナー用（全員のデータ）' : (S.me ? S.me.name + '（' + S.me.pos + '・' + S.me.arm + '）' : '');
+  nav();
+  ({ input: drawInput, mine: function () { drawPlayer(S.me.name); }, team: drawTeam, player: function () { drawPlayer(S.player); }, status: drawStatus, about: drawAbout })[v]();
+}
+
+// ===== データの組み立て（体の行＋投球の行 → 1人1日の記録） =====
+var R = [], STAT = {}, RANKED = [];
+function build() {
+  var it = S.D.items;
+  RANKED = [].concat(it.pitchRank.map(function (m) { m.g = 'ラプソード'; return m; }), it.vald.map(function (m) { m.g = 'VALD'; return m; }), it.extraRank.map(function (m) { m.g = '握力'; return m; }));
+  var map = {};
+  S.D.body.forEach(function (b) { var k = b.date + '|' + b.name; var o = map[k] = Object.assign({}, b); Object.keys(o).forEach(function (x) { if (['id', 'date', 'name', 'pos', 'arm', 'updated'].indexOf(x) < 0) o[x] = N(o[x]); }); o.pl = []; });
+  S.D.pitches.forEach(function (p) { var k = p.date + '|' + p.name; if (!map[k]) map[k] = { date: p.date, name: p.name, pos: '', arm: '', pl: [] }; map[k].pl.push(p); });
+  var know = {}; Object.keys(map).forEach(function (k) { var r = map[k], o = know[r.name] = know[r.name] || {}; if (r.pos) o.pos = r.pos; if (r.arm) o.arm = r.arm; });
+  R = Object.keys(map).map(function (k) {
+    var r = map[k];
+    if (!r.pos && know[r.name]) r.pos = know[r.name].pos; if (!r.arm && know[r.name]) r.arm = know[r.name].arm;
+    ['sh', 'hip'].forEach(function (j) { ['L', 'R'].forEach(function (s) { var a = r[j + '_ir_' + s], b = r[j + '_er_' + s]; if (r[j + '_ta_' + s] == null && a != null && b != null) r[j + '_ta_' + s] = a + b; }); });
+    var by = {};
+    r.pl.forEach(function (p) { (by[p.pt] = by[p.pt] || []).push(p); });
+    r.pitches = {};
+    Object.keys(by).forEach(function (t) {
+      var ps = by[t], avg = function (f) { var v = ps.map(function (p) { return N(p[f]); }).filter(function (x) { return x != null; }); return v.length ? v.reduce(function (a, b) { return a + b; }, 0) / v.length : null; };
+      var sp = ps.map(function (p) { return N(p.speed); }).filter(function (x) { return x != null; });
+      r.pitches[t] = { n: ps.length, speed: avg('speed'), speedMax: sp.length ? Math.max.apply(null, sp) : null, spin: avg('spin'), eff: avg('eff'), tspin: avg('tspin'), gyro: avg('gyro'), vb: avg('vb'), hb: avg('hb') };
+    });
+    var st = r.pitches.ST || {};
+    r.speed_max = st.speedMax == null ? null : st.speedMax; r.spin = st.spin == null ? null : st.spin; r.tspin = st.tspin == null ? null : st.tspin;
+    r.eff = st.eff; r.gyro = st.gyro; r.vb = st.vb; r.hb = st.hb;
+    r.grip_throw = r.arm === '左投げ' ? r.grip_L : r.grip_R;
+    return r;
+  });
+  STAT = {};
+  DATES().forEach(function (d) {
+    STAT[d] = {};
+    var rs = R.filter(function (r) { return r.date === d; });
+    RANKED.forEach(function (m) {
+      var v = rs.map(function (r) { return r[m.k]; }).filter(function (x) { return x != null; });
+      if (v.length < 3) { STAT[d][m.k] = null; return; }
+      var mean = v.reduce(function (a, b) { return a + b; }, 0) / v.length;
+      var sd = Math.sqrt(v.reduce(function (a, b) { return a + (b - mean) * (b - mean); }, 0) / v.length);
+      STAT[d][m.k] = { mean: mean, sd: sd, n: v.length, vals: v };
+    });
+  });
+}
+function DATES(withToday) { var s = {}; R.forEach(function (r) { s[r.date] = 1; }); if (withToday && S.D.today) s[S.D.today] = 1; return Object.keys(s).sort(); }
+function NAMES() { var s = {}; R.slice().sort(function (a, b) { return a.date < b.date ? 1 : -1; }).forEach(function (r) { s[r.name] = 1; }); return Object.keys(s); }
+function rec(d, n) { return R.filter(function (r) { return r.date === d && r.name === n; })[0]; }
+function latest(n) { return R.filter(function (r) { return r.name === n; }).sort(function (a, b) { return a.date < b.date ? 1 : -1; })[0]; }
+function prevOf(r) { return R.filter(function (x) { return x.name === r.name && x.date < r.date; }).sort(function (a, b) { return a.date < b.date ? 1 : -1; })[0]; }
+function dev(r, k) { var s = STAT[r.date] && STAT[r.date][k], x = r[k]; if (!s || x == null || !s.sd) return null; return 50 + 10 * (x - s.mean) / s.sd; }
+function rank(r, k) { var s = STAT[r.date] && STAT[r.date][k], x = r[k]; if (!s || x == null) return null; return { r: s.vals.filter(function (v) { return v > x; }).length + 1, n: s.n }; }
+function total(r) { var d = RANKED.map(function (m) { return dev(r, m.k); }).filter(function (x) { return x != null; }); return d.length >= 3 ? d.reduce(function (a, b) { return a + b; }, 0) / d.length : null; }
+function fmt(v, k) { if (v == null) return '—'; var big = ['rfd', 'pp', 'spin', 'tspin'].indexOf(k) >= 0 || Math.abs(v) >= 1000; return big ? Math.round(v).toLocaleString() : (Math.round(v * 10) / 10).toString(); }
+var dcls = function (x) { return x == null ? '' : x >= 65 ? 'd5' : x >= 57 ? 'd4' : x >= 50 ? 'd3' : x >= 43 ? 'd2' : 'd1'; };
+var devTag = function (x) { return x == null ? '<span class="ref">—</span>' : '<span class="dev ' + dcls(x) + '">' + x.toFixed(0) + '</span>'; };
+function diffTag(a, b, k, color) { if (a == null || b == null) return '<span class="ref">—</span>'; var d = b - a, s = (d > 0 ? '+' : '') + fmt(d, k); if (color === false) return '<span class="flat">' + s + '</span>'; return '<span class="' + (d > 0 ? 'up' : d < 0 ? 'down' : 'flat') + '">' + s + '</span>'; }
+
+// 可動域：順位ではなく、基準と左右差で見る
+function rom(r) {
+  var T = r.arm === '左投げ' ? 'L' : 'R', Nn = T === 'R' ? 'L' : 'R', SD = { L: '左', R: '右' }, out = [], g = function (k) { return r[k]; };
+  var dif = function (a, b) { return g(a) != null && g(b) != null ? g(a) - g(b) : null; };
+  var c = function (label, val, ok, why, refOnly) { out.push({ label: label, val: val, st: val == null ? 'none' : refOnly ? 'ref' : ok ? 'ok' : 'warn', why: why }); };
+  var ta = dif('sh_ta_' + T, 'sh_ta_' + Nn); c('肩のトータルアーク　投げる側−反対側', ta, ta != null && ta >= -5, '投げる側が5°より大きく少ないと、肩のけがが約1.9倍（Wilk 2011・プロ投手）');
+  var er = dif('sh_er_' + T, 'sh_er_' + Nn); c('肩の外旋　投げる側−反対側', er, er != null && er >= 5, '投げる側の外旋が反対側より5°以上多くないと、肩のけがが約2.2倍（Wilk 2015）');
+  var ir = dif('sh_ir_' + T, 'sh_ir_' + Nn); c('肩の内旋　投げる側−反対側（GIRD）', ir, ir != null && ir > -20, '参考。内旋が20°以上少ない＝GIRD。けがとのつながりははっきりしていない', true);
+  c('肩の外旋（' + SD[T] + '・投げる側）', g('sh_er_' + T), g('sh_er_' + T) >= 120, '基準 120°以上（MAST）');
+  c('肩のトータルアーク（' + SD[T] + '・投げる側）', g('sh_ta_' + T), g('sh_ta_' + T) >= 160, '基準 160〜190°（MAST）');
+  c('股関節の内旋（' + SD[Nn] + '・踏み出し脚）', g('hip_ir_' + Nn), g('hip_ir_' + Nn) >= 45, '基準 45°以上（MAST）。踏み出し脚の内旋が少ないと、けがが増えるという報告がある');
+  c('股関節の内旋（' + SD[T] + '・軸脚）', g('hip_ir_' + T), g('hip_ir_' + T) >= 45, '基準 45°以上（MAST）');
+  c('股関節のトータルアーク（左・右）', g('hip_ta_L') != null && g('hip_ta_R') != null ? g('hip_ta_L') + ' / ' + g('hip_ta_R') : null, g('hip_ta_L') >= 100 && g('hip_ta_R') >= 100, '基準 100°以上（MAST）');
+  var th = g('th_L') != null && g('th_R') != null ? Math.abs(g('th_L') - g('th_R')) : null; c('胸郭回旋の左右差', th, th != null && th <= 10, '10°以内なら問題なし（MASTの「0〜10」を左右差と読んだ）');
+  return out;
+}
+var romWarn = function (r) { return rom(r).filter(function (x) { return x.st === 'warn'; }).length; };
+var romCell = function (x) { return x.st === 'none' ? '<span class="ref">—</span>' : x.st === 'ok' ? '<span class="ok">○ 基準内</span>' : x.st === 'ref' ? '<span class="ref">参考</span>' : '<span class="warn">△ 注意</span>'; };
+
+// ===== 入力 =====
+function who() { return S.D.role === 'staff' ? { name: S.player, pos: (latest(S.player) || {}).pos || '投手', arm: (latest(S.player) || {}).arm || '右投げ' } : S.me; }
+function drawInput() {
+  var w = who(), r = rec(S.date, w.name) || {}, it = S.D.items;
+  var field = function (m) { var v = r[m.k]; return '<label class="fld"><span>' + esc(m.l) + (m.en ? '<small>' + esc(m.en) + '</small>' : '') + '</span><input data-k="' + m.k + '" inputmode="decimal" value="' + (v == null ? '' : v) + '"><em>' + esc(m.u) + '</em></label>'; };
+  var pl = (r.pl || []);
+  var h = '<section><h2>' + esc(w.name) + '　' + JP(S.date) + 'の測定</h2>' +
+    (S.date !== S.D.today ? '<p class="warn">⚠️ 今回（' + JP(S.D.today) + '）ではない日を開いています</p>' : '') +
+    '<div class="photo"><b>📷 写真で入れる</b><p class="note">ラプソード・VALDの画面や、記録用紙を撮ると、数字を読み取って下の欄に入れます。<b>入ったら数字を確かめてから保存</b>してください。</p>' +
+    '<label class="primary filebtn">写真を撮る・選ぶ<input type="file" id="ph" accept="image/*" hidden></label><div id="phOut"></div></div></section>';
+  h += '<section><h2>ラプソード（1球ずつ）</h2><div class="scroll"><table id="ptab"><tr><th class="l">球種</th><th>球速</th><th>回転数</th><th>回転効率</th><th>トゥルースピン</th><th>回転軸</th><th>ジャイロ</th><th>縦変化</th><th>横変化</th><th></th></tr>' +
+    pl.map(function (p) { return '<tr><td class="l">' + esc(p.pt) + '</td>' + ['speed', 'spin', 'eff', 'tspin', 'axis', 'gyro', 'vb', 'hb'].map(function (f) { return '<td>' + esc(p[f]) + '</td>'; }).join('') + '<td><button class="mini" data-del="' + p.id + '">消す</button></td></tr>'; }).join('') +
+    '</table></div>' + (pl.length ? '' : '<p class="note">まだ入っていません。</p>') +
+    '<h3>手で足す</h3><div class="scroll"><table><tr><th class="l">球種</th><th>球速</th><th>回転数</th><th>回転効率</th><th>トゥルースピン</th><th>回転軸</th><th>ジャイロ</th><th>縦変化</th><th>横変化</th></tr><tbody id="newP"></tbody></table></div>' +
+    '<button class="ghost" id="addRow">＋ 行を足す</button> <button class="primary" id="saveP">この球を保存</button>' +
+    '<p class="note">単位：球速 km/h・回転数 rpm・回転効率 %・変化量 cm。回転軸は「1:30」の形。横変化はラプソードの表示のまま。</p></section>';
+  [['VALD（ジャンプ）', it.vald], ['体', it.info], ['可動域', it.rom], ['握力', it.grip]].forEach(function (g, i) {
+    h += '<section><h2>' + g[0] + '</h2><div class="grid">' + g[1].map(field).join('') + '</div></section>';
+  });
+  h += '<section class="sticky"><button class="primary wide" id="saveB">体の数字を保存</button></section>';
+  main(h);
+  addRow();
+  $('addRow').onclick = function () { addRow(); };
+  $('saveP').onclick = savePitches;
+  $('saveB').onclick = saveBody;
+  $('ph').onchange = readPhoto;
+  document.querySelectorAll('button[data-del]').forEach(function (b) {
+    b.onclick = async function () { b.disabled = true; try { await call('deletePitch', { id: b.dataset.del }); await reload(); toast('消しました'); } catch (e) { toast(e.message); b.disabled = false; } };
+  });
+}
+function addRow(p) {
+  p = p || {};
+  var tr = document.createElement('tr');
+  tr.innerHTML = '<td class="l"><select data-f="pt">' + S.D.pitchTypes.map(function (t) { return '<option' + (t === (p.pt || 'ST') ? ' selected' : '') + '>' + t + '</option>'; }).join('') + '</select></td>' +
+    ['speed', 'spin', 'eff', 'tspin', 'axis', 'gyro', 'vb', 'hb'].map(function (f) { return '<td><input data-f="' + f + '" ' + (f === 'axis' ? '' : 'inputmode="decimal"') + ' value="' + (p[f] == null ? '' : p[f]) + '"' + (p.fromPhoto ? ' class="fromphoto"' : '') + '></td>'; }).join('');
+  $('newP').appendChild(tr);
+}
+async function savePitches() {
+  var rows = Array.prototype.map.call($('newP').querySelectorAll('tr'), function (tr) {
+    var o = {}; tr.querySelectorAll('[data-f]').forEach(function (e) { o[e.dataset.f] = e.value.trim(); });
+    o.src = tr.querySelector('.fromphoto') ? '写真' : '手入力'; return o;
+  }).filter(function (o) { return o.speed || o.spin; });
+  if (!rows.length) return toast('球速か回転数を入れてください');
+  var w = who();
+  $('saveP').disabled = true;
+  try { await call('addPitches', { date: S.date, name: w.name, pos: w.pos, arm: w.arm, pitches: rows }); await reload(); toast(rows.length + '球を保存しました'); }
+  catch (e) { toast(e.message, 5000); $('saveP').disabled = false; }
+}
+async function saveBody() {
+  var f = {}; document.querySelectorAll('.grid input[data-k]').forEach(function (e) { f[e.dataset.k] = e.value.trim(); });
+  var w = who();
+  $('saveB').disabled = true;
+  try { await call('saveBody', { date: S.date, name: w.name, pos: w.pos, arm: w.arm, fields: f }); await reload(); toast('保存しました。「' + (S.D.role === 'staff' ? '選手ごと' : '自分の結果') + '」で順位が見られます', 4000); }
+  catch (e) { toast(e.message, 5000); $('saveB').disabled = false; }
+}
+async function reload() { S.D = await call('bootstrap', { me: S.me && S.me.name }); build(); go(S.view); }
+function readPhoto(ev) {
+  var file = ev.target.files[0]; if (!file) return;
+  $('phOut').innerHTML = '<p class="note">読み取り中…（10〜30秒）</p>';
+  var img = new Image(), url = URL.createObjectURL(file);
+  img.onload = async function () {
+    var max = 1600, s = Math.min(1, max / Math.max(img.width, img.height));
+    var c = document.createElement('canvas'); c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    var data = c.toDataURL('image/jpeg', 0.85).split(',')[1];
+    try {
+      var r = await call('readPhoto', { data: data, mediaType: 'image/jpeg' });
+      var n = 0;
+      (r.pitches || []).forEach(function (p) { p.fromPhoto = true; addRow(p); n++; });
+      var m = 0;
+      Object.keys(r.body || {}).forEach(function (k) {
+        var v = r.body[k], e = document.querySelector('.grid input[data-k="' + k + '"]');
+        if (v != null && e) { e.value = v; e.classList.add('fromphoto'); m++; }
+      });
+      // 空の手入力行は消す
+      Array.prototype.forEach.call($('newP').querySelectorAll('tr'), function (tr) { if (!tr.querySelector('.fromphoto') && !Array.prototype.some.call(tr.querySelectorAll('input'), function (i) { return i.value; })) tr.remove(); });
+      $('phOut').innerHTML = '<p class="ok">読み取れました：投球 ' + n + '球・体の数字 ' + m + '個（<span class="fromphoto-s">黄色の欄</span>）。数字を確かめてから「この球を保存」「体の数字を保存」を押してください。</p>' + (r.note ? '<p class="note">メモ：' + esc(r.note) + '</p>' : '');
+    } catch (e) { $('phOut').innerHTML = '<p class="warn">' + esc(e.message) + '</p>'; }
+    URL.revokeObjectURL(url); ev.target.value = '';
+  };
+  img.src = url;
+}
+
+// ===== 解説（野球ノート：本業/VALD/まとめ.md・本業/ピッチデザイン/まとめ.md から） =====
+var EXPLAIN = {
+  speed_max: { s: '球速', what: 'ストレートの、その日いちばん速かった1球。', read: '「最高」を使うのは、全力の1球がいちばん比べやすいから。平均球速は「球の中身」の表に出ます。' },
+  spin: { s: '回転数', what: '1分間にボールが何回まわったか（rpm）。', read: '球速が上がると回転数も自然に増えます。だから回転数÷球速（mph）＝<b>Bauer Units</b>で見ると「回転のかけ方」が変わったかが分かります。日本の高校〜社会人で約25。', calc: function (r) { return r.spin && r.speed_max ? 'あなたの Bauer Units ≒ ' + (r.spin / (r.speed_max / 1.609)).toFixed(1) : ''; } },
+  tspin: { s: 'トゥルースピン', what: '回転のうち、変化（浮く・曲がる）に使われている回転数。回転数 × 回転効率。', read: '回転数が多くても、ジャイロ回転（ライフル弾のような回転）が多いと変化に使われません。ストレートの「伸び」に効くのはこちら。' },
+  eff: { s: '回転効率', what: '使われている回転 ÷ 全部の回転。', read: '<b>順位はつけません。</b>球種で正解が違います。ストレートは85〜100%が目安、カットボールは45〜65%、スライダーは0〜30%が普通（ラプソードの資料）。' },
+  gyro: { s: 'ジャイロ角度', what: '回転軸がキャッチャー方向をどれだけ向いているか。0°＝真横（回転が全部仕事をする）、90°＝真正面（変化しない）。', read: '<b>順位はつけません。</b>ジャイロは「悪い回転」ではなく、スライダーなどでは狙って使うもの。' },
+  vb: { s: '縦の変化', what: '重力だけで落ちた場合と比べて、何cm落ちずに来たか。', read: '<b>順位はつけません。</b>大きい＝伸び系、小さい＝垂れ系。高校生の平均は40cm台前半（ラプソード・ジャパン）。型によって合う配球が違います。' },
+  hb: { s: '横の変化', what: 'シュート方向（＋）・スライド方向（−）に何cm動いたか。', read: '<b>順位はつけません。</b>縦の変化と組み合わせて「球質」を決めます。' },
+  jh: { s: '跳躍高', en: 'Jump Height (Flight Time)', r: 'Jump Height', what: 'その場で反動をつけて跳んだ高さ（滞空時間から計算）。全体の出力を表す「結果」の数字。', read: '体重が軽いと出やすい。疲れても最後まで落ちにくいので、疲労の目安には向きません。' },
+  ci: { s: '踏み切る力', en: 'Concentric Impulse', r: 'Conc. Impulse', what: '体を押し上げる局面で、地面を押した力の総量。', read: '体重が重いほど大きく出ます。目安は<b>体重×3</b>（145km/h投手の基準・DIMENSIONING）。', calc: function (r) { return r.bm && r.ci ? '体重×3 ＝ ' + Math.round(r.bm * 3) + '（あなた ' + fmt(r.ci) + '）' : ''; } },
+  ci100: { s: '0.1秒の力', en: 'Concentric Impulse – 100ms', r: 'Impulse 100ms', what: '押し始めて最初の0.1秒で出せた力。立ち上がりの速さ＝爆発力を表す「要因」の数字。', read: '遅い時間を見るほど、ただの筋力の強さに近づきます。速い動きの野球では、早い時間の力が大事。' },
+  rfd: { s: '止める力', en: 'Eccentric Braking RFD', r: 'Braking RFD', what: 'しゃがみ込んで止める局面で、どれだけ速くブレーキをかけられたか。', read: '<b>投球の踏み出し脚・打撃の踏み込みで「前に進む体を止めて、回転に変える」動きにいちばん近い数字。</b>中学投手の研究では、ブレーキ系の数字が球速といちばん強く関係していました。目安は<b>体重×9.8×11.6</b>。', calc: function (r) { return r.bm && r.rfd ? '体重×9.8×11.6 ＝ ' + Math.round(r.bm * 9.8 * 11.6).toLocaleString() + '（あなた ' + fmt(r.rfd, 'rfd') + '）' : ''; } },
+  pp: { s: '最大パワー', en: 'Peak Power', r: 'Peak Power', what: '押し上げる局面で出せたパワーの最大値。出力の天井を表す「結果」の数字。', read: '体重1kgあたりで見ると比べやすい。目安は<b>55W/kg</b>（150km/h投手）、MLBの平均は60W/kg。ただ中学投手の研究では、球速との関係は「止める力」より弱めでした。', calc: function (r) { return r.bm && r.pp ? 'あなたの体重1kgあたり ' + (r.pp / r.bm).toFixed(1) + ' W/kg' : ''; } },
+  grip_throw: { s: '握力', what: '人差し指・中指・親指の3本で握る力（投げる手）。', read: '指先でボールを押し出す力の目安。基準は30〜35kg。' }
+};
+var VALD_NOTE = '南平のこれまでのデータでは、跳ぶ力が高い人ほど球速が速い、という関係はほとんどありませんでした。だからこそ「体はあるのに球に変わっていない（→フォーム）」「技術で出している（→体を作れば伸びる）」のどちらかを見分ける材料になります。';
+
+// ===== ストレートの球質（保田さんの9分類・チームシートを作る.py と同じ境目）と、合う変化球 =====
+var QUALITY_RULE = [
+  ['伸びシュート系', function (v) { return v >= 47; }, function (h) { return h >= 30; }],
+  ['伸びスラ系', function (v) { return v >= 47; }, function (h) { return h >= 0 && h <= 8; }],
+  ['伸び系', function (v) { return v >= 50; }, function (h) { return h >= 10 && h <= 30; }],
+  ['標準シュート系', function (v) { return v >= 39 && v <= 45; }, function (h) { return h >= 30; }],
+  ['真っスラ系', function (v) { return v >= 39 && v <= 45; }, function (h) { return h >= 0 && h <= 8; }],
+  ['標準形', function (v) { return v >= 39 && v <= 45; }, function (h) { return h >= 10 && h <= 30; }],
+  ['垂れシュート系', function (v) { return v <= 38; }, function (h) { return h >= 30; }],
+  ['垂れスラ系', function (v) { return v <= 38; }, function (h) { return h >= 0 && h <= 8; }],
+  ['垂れ系', function (v) { return v <= 38; }, function (h) { return h >= 20 && h <= 30; }]
+];
+function qualityOf(r) {
+  if (r.vb == null || r.hb == null) return null;
+  var h = r.arm === '左投げ' ? -r.hb : r.hb;
+  for (var i = 0; i < QUALITY_RULE.length; i++) if (QUALITY_RULE[i][1](r.vb) && QUALITY_RULE[i][2](h)) return QUALITY_RULE[i][0];
+  return 'その他';
+}
+// 変化球の目安の位置（右投手から見た cm。＋＝シュート方向）。一般的な形の目安で、正確な目標値ではない
+var PITCH_SHAPE = {
+  CB: { n: 'カーブ', x: -18, y: -30, has: ['CB'] }, FK: { n: 'フォーク', x: 8, y: 5, has: ['FK', 'SP'] },
+  CH: { n: 'チェンジアップ', x: 30, y: 15, has: ['CH'] }, '2S': { n: 'ツーシーム', x: 35, y: 22, has: ['2S'] },
+  SI: { n: 'シンカー', x: 40, y: 8, has: ['SI'] }, SL: { n: 'スライダー', x: -22, y: 3, has: ['SL', 'VSL'] },
+  SW: { n: 'スイーパー', x: -38, y: 5, has: [] }, CT: { n: 'カット', x: -6, y: 25, has: ['CT', 'VST'] }
+};
+// 型ごとの狙い（ゲームの組み立て）と合う変化球（保田さんの言葉。◎＝合う、△＝条件つき）
+var QUALITY_PLAN = {
+  '伸び系': { plan: 'ボールの高低差が出やすく、<b>空振りやポップフライを取りやすい</b>。高めのストレートと、低めに落ちる球の高低で組み立てる。', ok: ['CB', 'FK'], maybe: ['CT', 'SL'], why: 'カット・スライダーは回転効率が低い球なので、ストレートの回転に影響しやすい' },
+  '伸びシュート系': { plan: 'シュートすることを計算してコースを狙う（右投手なら<b>アウトロー</b>、左投手なら<b>インロー</b>）。斜めに落ちる球と、その対角の球で揺さぶる。', ok: ['SL', 'CT', 'CH', '2S'], maybe: [] },
+  '伸びスラ系': { plan: '<b>インコースに速く高く、アウトコースに遅く低く</b>。高めを意識させて、シュートしながら落ちる球で決める。', ok: ['CT', '2S', 'CH'], maybe: [] },
+  '標準形': { plan: '見慣れた球質になりやすいので、<b>速さ・入り方・変化球との組み合わせ</b>で勝負。変化球を多彩にそろえる技巧派を目指す。', ok: ['CB', 'SL', 'CH', 'FK'], maybe: [] },
+  '標準シュート系': { plan: 'シュートを生かして、<b>シュートしながら落ちる球</b>で同じ軌道から変化させる。', ok: ['FK', '2S', 'CH'], maybe: ['CT', 'SL'], why: 'カット・スライダーは優先順位が低め' },
+  '真っスラ系': { plan: '打者には打ちにくいが、制球が難しい。<b>球種の配分を工夫</b>する。スライダー方向の球で組み立てる。', ok: ['CT', 'SL', 'CB'], maybe: [], why: 'シュート系を投げると、ボールの真ん中を押す感覚をつかみやすい' },
+  '垂れ系': { plan: '<b>ゴロを打たせて取る</b>スタイル。とにかく低めに集める。球が遅い・回転が少ない・制球も悪いなら、まずフォームの改善。', ok: ['CH', 'FK', 'SI', '2S'], maybe: ['SL'], why: 'スライダーは系統が似すぎるので、投げられるならシンカーやツーシーム' },
+  '垂れシュート系': { plan: 'シュートしながら垂れる前提で、<b>アウトローを基本線</b>にし、そこからどう変化させるかを考える。', ok: ['SI', 'SW', 'SL'], maybe: [] },
+  '垂れスラ系': { plan: '打者の予測から外れやすい珍しい球質。<b>打たせて取る</b>。直球も変化球も低めに。積極的に振ってくるチームと相性がよい。', ok: ['CB', 'SL', '2S', 'CH'], maybe: [] },
+  'その他': { plan: '縦45〜47cm・横8〜10cmの<b>境目</b>にいます。次の測定で近いほうに寄れば、その型として読めます。', ok: [], maybe: [] }
+};
+function fbClass(r) {
+  if (r.vb == null || r.hb == null) return null;
+  var h = r.arm === '左投げ' ? -r.hb : r.hb;
+  var vi = r.vb >= 47 ? 0 : r.vb >= 39 ? 1 : 2, hi = h <= 8.5 ? 0 : h < 29.5 ? 1 : 2;
+  return { v: ['伸び', '標準', '垂れ'][vi], h: ['スライダー寄り', '標準', 'シュート寄り'][hi], vi: vi, hi: hi };
+}
+function pitchPlan(r) {
+  var q = qualityOf(r); if (!q) return null;
+  var P = QUALITY_PLAN[q], have = Object.keys(r.pitches);
+  var hasIt = function (k) { return PITCH_SHAPE[k].has.some(function (t) { return have.indexOf(t) >= 0; }); };
+  return { q: q, plan: P.plan, why: P.why || '', want: P.ok.filter(function (k) { return !hasIt(k); }), have: P.ok.filter(hasIt), maybe: P.maybe };
+}
+
+// ===== 診断：技術・体（筋力）・可動域のどこが課題か =====
+var LINK = {
+  speed_max: '球速そのもの。上がれば打者の反応時間が減る',
+  spin: '回転が増えると、ストレートが落ちにくくなり空振りやフライが増える',
+  tspin: '変化に使われる回転が増えると、ストレートの「伸び」が増える',
+  jh: '全身で地面を押す力の土台。球速の土台になる',
+  ci: '地面を押す力の総量。体重を増やしつつ鍛えると、投げる力の土台が大きくなる',
+  ci100: '短い時間で力を出す力。投球は一瞬の動作なので、速く力を出せるほど腕を速く振れる',
+  rfd: '踏み出し脚で体を止める力。前に進む勢いを回転に変える量が増え、球速に直結しやすい',
+  pp: '出力の天井。体重あたりで55W/kgが150km/h投手の目安',
+  grip_throw: '指先でボールを押す力。回転数と制球に効く'
+};
+function diagnose(r) {
+  var vald = ['jh', 'ci', 'ci100', 'rfd', 'pp'].map(function (k) { return dev(r, k); }).filter(function (v) { return v != null; });
+  var body = vald.length ? vald.reduce(function (a, b) { return a + b; }, 0) / vald.length : null;
+  var velo = dev(r, 'speed_max');
+  var warn = rom(r).filter(function (x) { return x.st === 'warn'; });
+  var out = { type: '', lines: [] };
+  // 外の基準（体重あたり。DIMENSIONINGの145km/h投手の基準）
+  var bench = [];
+  if (r.bm && r.pp) bench.push('最大パワー ' + (r.pp / r.bm).toFixed(1) + 'W/kg（目安55）');
+  if (r.bm && r.rfd) bench.push('止める力 ' + Math.round(r.rfd / (r.bm * 9.8 * 11.6) * 100) + '%（目安＝体重×9.8×11.6）');
+  if (r.bm && r.ci) bench.push('踏み切る力 ' + Math.round(r.ci / (r.bm * 3) * 100) + '%（目安＝体重×3）');
+  if (body != null && velo != null) {
+    if (body >= 50 && velo >= 50) out.type = ['噛み合っている', '体の力も球速もチームの上位。体と技術の両方を少しずつ伸ばす段階。'];
+    else if (body >= 50) out.type = ['技術が課題', '<b>体の力はあるのに、球速に変わり切っていない。</b>伸ばすのはフォーム側（踏み出し脚で体を止めて、回転に変える動き）。'];
+    else if (velo >= 50) out.type = ['体が課題', '<b>技術で球速を出している。</b>体（筋力・パワー）を作れば、いちばん伸びしろが大きいタイプ。'];
+    else out.type = ['土台から', '体の力も球速もこれから。まず体づくり（筋力・体重）から。'];
+  } else if (velo != null) out.type = ['', 'VALDの数字が入ると、技術と体のどちらが課題か分かります。'];
+  if (bench.length) out.lines.push(['体の力（体重あたり）', bench.join('／') + '。100%を超えると145km/h投手の水準。']);
+  if (r.eff != null && r.eff < 85) out.lines.push(['技術：回転の質', 'ストレートの回転効率が' + Math.round(r.eff) + '%（目安85〜100%）。回転の一部が「伸び」に使われていない。ボールの真後ろを指で押す感覚を作ると、同じ回転数でも伸びが増える。']);
+  var shoulder = warn.filter(function (w) { return w.label.indexOf('肩') === 0; }), hip = warn.filter(function (w) { return w.label.indexOf('股関節') === 0; });
+  if (warn.length && ((velo != null && velo >= 50) || (body != null && body >= 55)))
+    out.lines.push(['⚠️ けがのリスク', '<b>球速（または体の力）が出ている分、関節にかかる負担も大きい。</b>' + warn.map(function (w) { return w.label; }).join('・') + 'に注意が出ています。強度を上げる前に、ここを先に整える。']);
+  else if (shoulder.length) out.lines.push(['可動域：肩', shoulder.map(function (w) { return w.label; }).join('・') + 'に注意。肩の動きが足りないと、腕のしなりが小さくなり、肩・肘の負担が増える。']);
+  if (hip.length && !(warn.length && ((velo != null && velo >= 50) || (body != null && body >= 55))))
+    out.lines.push(['可動域：股関節', hip.map(function (w) { return w.label; }).join('・') + 'に注意。踏み出し脚の股関節が回らないと、体の回転が止まり、腕だけで投げる形になりやすい。']);
+  return out;
+}
+function growthLinks(items, now) {
+  var x = items.map(function (m, i) { return { m: m, v: now[i] }; }).filter(function (o) { return o.v != null; }).sort(function (a, b) { return a.v - b.v; });
+  return x.slice(0, 2).map(function (o) { return '<li><b>' + (o.m.g === 'VALD' ? o.m.l : EXPLAIN[o.m.k].s) + '</b>（偏差値' + o.v.toFixed(0) + '）→ ' + LINK[o.m.k] + '</li>'; }).join('');
+}
+
+// ===== 可動域：部位ごとに左右を並べる =====
+function romJoints(r, p) {
+  var T = r.arm === '左投げ' ? 'L' : 'R';
+  var joints = [
+    { n: '肩（腕を横に上げた位置）', rows: [['内旋', 'sh_ir', 45, '45〜60'], ['外旋', 'sh_er', 120, '120'], ['トータル', 'sh_ta', 160, '160〜190']], tag: function (s) { return s === T ? '投げる側' : ''; } },
+    { n: '股関節', rows: [['内旋', 'hip_ir', 45, '45'], ['外旋', 'hip_er', 45, '45'], ['トータル', 'hip_ta', 100, '100']], tag: function (s) { return s === T ? '軸脚' : '踏み出し脚'; } },
+    { n: '胸郭回旋', rows: [['回旋', 'th', null, '左右差10°以内']], tag: function () { return ''; } }
+  ];
+  return joints.map(function (j) {
+    var side = function (s) {
+      return '<div class="rj-side' + (j.tag(s) === '投げる側' || j.tag(s) === '踏み出し脚' ? ' key' : '') + '"><div class="rj-sh"><b>' + (s === 'L' ? '左' : '右') + '</b>' + (j.tag(s) ? '<span class="rj-tag">' + j.tag(s) + '</span>' : '') + '</div>' +
+        j.rows.map(function (row) {
+          var v = r[row[1] + '_' + s], pv = p ? p[row[1] + '_' + s] : null, ok = row[2] == null || v == null ? null : v >= row[2];
+          return '<div class="rj-row"><span class="rj-k">' + row[0] + '</span><span class="rj-v' + (ok === false ? ' low' : '') + '">' + (v == null ? '—' : v + '°') + '</span>' + (pv != null ? '<span class="rj-p">前回 ' + pv + '</span>' : '') + '</div>';
+        }).join('') + '</div>';
+    };
+    return '<section class="rjoint"><div class="rj-h">' + j.n + '<span class="rj-ref">基準 ' + j.rows.map(function (x) { return x[0] + ' ' + x[3]; }).join('・') + '</span></div><div class="rj-lr">' + side('L') + side('R') + '</div></section>';
+  }).join('');
+}
+
+// ===== 絵 =====
+function radar(items, now, prev) {
+  var n = items.length, c = 170, R = 120, lo = 20, hi = 80;
+  var pt = function (i, v) { var a = -Math.PI / 2 + 2 * Math.PI * i / n, rr = R * (Math.max(lo, Math.min(hi, v)) - lo) / (hi - lo); return [c + rr * Math.cos(a), c + rr * Math.sin(a)]; };
+  var ring = function (v) { return items.map(function (_, i) { return pt(i, v).join(','); }).join(' '); };
+  var poly = function (vals, cls) { if (!vals || vals.filter(function (v) { return v != null; }).length < 3) return ''; return '<polygon class="' + cls + '" points="' + vals.map(function (v, i) { return pt(i, v == null ? lo : v).join(','); }).join(' ') + '"/>' + vals.map(function (v, i) { return v == null ? '' : '<circle class="' + cls + '-dot" cx="' + pt(i, v)[0] + '" cy="' + pt(i, v)[1] + '" r="3.5"/>'; }).join(''); };
+  var h = '<svg class="radar" viewBox="0 0 340 340" role="img" aria-label="偏差値のレーダーチャート">';
+  [30, 40, 50, 60, 70].forEach(function (v) { h += '<polygon class="ring' + (v === 50 ? ' ring50' : '') + '" points="' + ring(v) + '"/>'; });
+  items.forEach(function (m, i) { var p = pt(i, hi); h += '<line class="spoke" x1="' + c + '" y1="' + c + '" x2="' + p[0] + '" y2="' + p[1] + '"/>'; });
+  h += poly(prev, 'prev') + poly(now, 'now');
+  items.forEach(function (m, i) {
+    var p = pt(i, hi + 11), a = p[0] < c - 5 ? 'end' : p[0] > c + 5 ? 'start' : 'middle';
+    var v = now && now[i] != null ? Math.round(now[i]) : '—';
+    h += '<text class="rlabel" x="' + p[0] + '" y="' + p[1] + '" text-anchor="' + a + '">' + (EXPLAIN[m.k].r || EXPLAIN[m.k].s) + '<tspan class="rval" x="' + p[0] + '" dy="14">' + v + '</tspan></text>';
+  });
+  return h + '</svg>';
+}
+function movement(r) {
+  var flip = r.arm === '左投げ' ? -1 : 1;
+  var ps = Object.keys(r.pitches).map(function (t) { return { t: t, x: r.pitches[t].hb == null ? null : r.pitches[t].hb * flip, y: r.pitches[t].vb }; }).filter(function (p) { return p.x != null && p.y != null; });
+  if (!ps.length) return '';
+  var W = 300, c = 150, s = 150 / 70;
+  var h = '<svg class="move" viewBox="0 0 300 300" role="img" aria-label="変化量の地図"><rect class="mv-bg" x="0" y="0" width="300" height="300"/>';
+  [-60, -30, 30, 60].forEach(function (v) { h += '<line class="mv-grid" x1="' + (c + v * s) + '" y1="0" x2="' + (c + v * s) + '" y2="300"/><line class="mv-grid" x1="0" y1="' + (c - v * s) + '" x2="300" y2="' + (c - v * s) + '"/>'; });
+  // ストレートの区分（右投手基準の cm）：縦＝伸び/標準/垂れ、横＝スライダー寄り/標準/シュート寄り
+  var VB = [['伸び', 47, 70], ['標準', 39, 47], ['垂れ', 15, 39]], HB = [['スライダー寄り', -10, 8.5], ['標準', 8.5, 29.5], ['シュート寄り', 29.5, 60]];
+  VB.forEach(function (v, vi) { HB.forEach(function (hh, hi) {
+    var x1 = c + hh[1] * s, x2 = c + hh[2] * s, y1 = c - v[2] * s, y2 = c - v[1] * s;
+    h += '<rect class="fz fz-v' + vi + ' fz-h' + hi + '" x="' + x1 + '" y="' + y1 + '" width="' + (x2 - x1) + '" height="' + (y2 - y1) + '"/>';
+  }); });
+  VB.forEach(function (v) { h += '<text class="fz-lab" x="' + (c + 60 * s - 3) + '" y="' + (c - (v[1] + v[2]) / 2 * s + 3) + '" text-anchor="end">' + v[0] + '</text>'; });
+  HB.forEach(function (hh) { h += '<text class="fz-lab2" x="' + (c + (hh[1] + hh[2]) / 2 * s) + '" y="' + (c - 15 * s + 10) + '" text-anchor="middle">' + hh[0] + '</text>'; });
+  h += '<line class="mv-axis" x1="150" y1="0" x2="150" y2="300"/><line class="mv-axis" x1="0" y1="150" x2="300" y2="150"/>';
+  h += '<text class="mv-t" x="154" y="12">伸びる ↑</text><text class="mv-t" x="154" y="296">落ちる ↓</text><text class="mv-t" x="296" y="146" text-anchor="end">シュート →</text><text class="mv-t" x="4" y="146">← スライド</text>';
+  ps.forEach(function (p) { var x = c + Math.max(-70, Math.min(70, p.x)) * s, y = c - Math.max(-70, Math.min(70, p.y)) * s; h += '<circle class="mv-dot mv-' + (p.t === 'ST' ? 'st' : 'other') + '" cx="' + x + '" cy="' + y + '" r="9"/><text class="mv-lab" x="' + x + '" y="' + (y + 4) + '" text-anchor="middle">' + p.t + '</text>'; });
+  return h + '</svg>';
+}
+function meter(v) { return v == null ? '' : '<div class="meter"><span class="meter-mid"></span><span class="meter-fill ' + dcls(v) + '" style="width:' + Math.max(2, Math.min(100, (v - 20) / 60 * 100)) + '%"></span></div>'; }
+function arrow(a, b, k) { if (a == null || b == null) return ''; var d = b - a; return '<span class="chg ' + (d > 0 ? 'up' : d < 0 ? 'down' : 'flat') + '">' + (d > 0 ? '▲ +' : d < 0 ? '▼ ' : '± ') + fmt(d, k) + '</span>'; }
+function explain(k, r) { var e = EXPLAIN[k]; if (!e) return ''; var c = e.calc && r ? e.calc(r) : ''; return '<details class="ex"><summary>この数字の見かた</summary><p>' + e.what + '</p><p>' + e.read + '</p>' + (c ? '<p class="ex-calc">' + c + '</p>' : '') + '</details>'; }
+
+// ===== チーム（種目ごとの順位） =====
+function drawTeam() {
+  var d = S.date, staff = S.D.role === 'staff', meN = S.me && S.me.name;
+  var all = R.filter(function (r) { return r.date === d; });
+  if (!all.length) return main('<section><h2>' + JP(d) + '</h2><p>まだだれも入力していません。</p></section>');
+  var rs = all.filter(function (r) { return (S.f.pos === 'all' || r.pos === S.f.pos) && (S.f.arm === 'all' || r.arm === S.f.arm); });
+  var chip = function (key, val, label) { return '<button class="chip' + (S.f[key] === val ? ' on' : '') + '" data-fk="' + key + '" data-fv="' + val + '">' + label + '</button>'; };
+  var h = '<section class="filters"><div class="frow"><span class="flabel">選手</span>' + chip('pos', 'all', '全員') + chip('pos', '投手', '投手') + chip('pos', '野手', '野手') + '</div>' +
+    '<div class="frow"><span class="flabel">投げる腕</span>' + chip('arm', 'all', 'すべて') + chip('arm', '右投げ', '右') + chip('arm', '左投げ', '左') + '</div>' +
+    '<div class="frow"><span class="flabel">種目</span>' + chip('grp', 'all', 'すべて') + chip('grp', 'ラプソード', 'ラプソード') + chip('grp', 'VALD', 'VALD') + chip('grp', '握力', '握力') + '</div>' +
+    '<p class="note">' + JP(d) + '・' + rs.length + '人' + (d === S.D.today ? '（入力した人から順に出ます）' : '') + '。順位はこの絞り込みの中での順位、偏差値はチーム全体の中での位置です。</p></section>';
+  var board = function (title, key, list, getV, sub) {
+    list = list.filter(function (r) { return getV(r) != null; }).sort(function (a, b) { return getV(b) - getV(a); });
+    if (!list.length) return '';
+    var mx = Math.max.apply(null, list.map(getV)), mn = Math.min.apply(null, list.map(getV));
+    var out = '<section class="board"><div class="board-h"><h2>' + title + '</h2>' + (sub ? '<span class="board-sub">' + sub + '</span>' : '') + '</div><ol class="rank">';
+    list.forEach(function (r, i) {
+      var v = getV(r), p = prevOf(r), dv = key === 'total' ? v : dev(r, key);
+      var w = mx === mn ? 100 : 15 + 85 * (v - mn) / (mx - mn);
+      out += '<li class="' + (r.name === meN ? 'me' : '') + (i < 3 ? ' top' + (i + 1) : '') + '"><span class="pos">' + (i + 1) + '</span>' +
+        '<span class="who">' + (staff ? '<a href="#" data-n="' + esc(r.name) + '">' + esc(r.name) + '</a>' : esc(r.name)) + '<small>' + esc(r.pos || '') + '</small></span>' +
+        '<span class="bar-wrap"><span class="rbar ' + dcls(dv) + '" style="width:' + w + '%"></span></span>' +
+        '<span class="val">' + (key === 'total' ? v.toFixed(0) : fmt(v, key)) + '</span>' +
+        '<span class="sub2">' + (key === 'total' ? '' : '偏差値 ' + (dv == null ? '—' : dv.toFixed(0))) + (p ? ' ' + arrow(key === 'total' ? total(p) : p[key], v, key) : '') + '</span></li>';
+    });
+    return out + '</ol>' + (key !== 'total' ? explain(key) : '') + '</section>';
+  };
+  h += '<div class="boards">' + board('総合偏差値', 'total', rs, total, '順位をつける項目の偏差値の平均');
+  RANKED.forEach(function (m) { if (S.f.grp !== 'all' && S.f.grp !== m.g) return; h += board(m.l, m.k, rs, function (r) { return r[m.k]; }, (m.en ? m.en + '・' : '') + m.u + (m.ref ? '・基準 ' + m.ref : '')); });
+  if (staff) {
+    var warn = rs.map(function (r) { return { r: r, w: rom(r).filter(function (x) { return x.st === 'warn'; }) }; }).filter(function (x) { return x.w.length; });
+    if (warn.length) h += '<section class="board romwarn"><div class="board-h"><h2>可動域で注意がある選手</h2><span class="board-sub">先生・トレーナーだけに表示</span></div><ul>' + warn.map(function (x) { return '<li><a href="#" data-n="' + esc(x.r.name) + '">' + esc(x.r.name) + '</a>：' + x.w.map(function (w) { return w.label; }).join('／') + '</li>'; }).join('') + '</ul></section>';
+  }
+  h += '</div>';
+  main(h);
+  document.querySelectorAll('.chip').forEach(function (b) { b.onclick = function () { S.f[b.dataset.fk] = b.dataset.fv; drawTeam(); }; });
+  document.querySelectorAll('a[data-n]').forEach(function (a) { a.onclick = function (e) { e.preventDefault(); S.player = a.dataset.n; go('player'); }; });
+}
+
+// ===== 1人 =====
+function drawPlayer(n) {
+  var rs = R.filter(function (r) { return r.name === n; }).sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+  if (!rs.length) return main('<section><h2>' + esc(n) + '</h2><p>まだ記録がありません。「入力する」から入れてください。</p></section>');
+  var last = rs.filter(function (r) { return r.date <= S.date; }).pop() || rs[rs.length - 1];
+  var prev = prevOf(last);
+  var items = RANKED.filter(function (m) { return EXPLAIN[m.k]; });
+  var now = items.map(function (m) { return dev(last, m.k); }), pv = prev ? items.map(function (m) { return dev(prev, m.k); }) : null;
+  var t = total(last), tp = prev ? total(prev) : null;
+  // 伸びた・伸ばしたい
+  var DG = diagnose(last);
+  var good = items.map(function (m, i) { return { m: m, v: now[i] }; }).filter(function (x) { return x.v != null; }).sort(function (a, b) { return b.v - a.v; });
+  var h = '<section class="hero"><div class="hero-l"><div class="hero-name">' + esc(n) + '</div><div class="hero-meta">' + esc(last.pos || '') + '・' + esc(last.arm || '') + '　' + JP(last.date) + '</div>' +
+    '<div class="hero-score"><span class="hs-label">総合偏差値</span><span class="hs-num">' + (t == null ? '—' : t.toFixed(0)) + '</span>' + (tp != null && t != null ? arrow(tp, t, 'x') : '') + '</div>' +
+    (good.length ? '<div class="hero-tags"><span class="tag good">強み：' + good.slice(0, 2).map(function (x) { return EXPLAIN[x.m.k].s; }).join('・') + '</span><span class="tag work">伸びしろ：' + good.slice(-2).reverse().map(function (x) { return EXPLAIN[x.m.k].s; }).join('・') + '</span></div>' : '') +
+    (DG.type && DG.type[0] ? '<div class="dg-type"><span class="dg-badge">' + DG.type[0] + '</span>' + DG.type[1] + '</div>' : (DG.type ? '<div class="dg-type">' + DG.type[1] + '</div>' : '')) +
+    '</div><div class="hero-r">' + radar(items, now, pv) + '<div class="legend"><i class="lg-now"></i>' + SH(last.date) + (prev ? '<i class="lg-prev"></i>' + SH(prev.date) + '（前回）' : '') + '<span>線の外ほどチームの中で上（真ん中の太線＝50）</span></div></div></section>';
+  h += '<section class="diag"><h2>この選手の見立て</h2>' + (good.length ? '<div class="dg-h">伸びしろが、投球にどうつながるか</div><ul class="dg-list">' + growthLinks(items, now) + '</ul>' : '') +
+    DG.lines.map(function (l) { return '<div class="dg-line' + (l[0].indexOf('⚠️') === 0 ? ' risk' : '') + '"><b>' + l[0] + '</b><p>' + l[1] + '</p></div>'; }).join('') +
+    '<p class="note">タイプ分けは、VALD5項目の偏差値の平均と球速の偏差値を、チームの真ん中（50）で分けたもの。体重あたりの目安はDIMENSIONINGの145km/h投手の基準。1回の測定での位置なので、断定ではありません。</p></section>';
+  var g = '';
+  h += '<div class="cards2">';
+  items.forEach(function (m) {
+    if (m.g !== g) { g = m.g; h += '<h2 class="grp">' + g + '</h2>'; }
+    var v = last[m.k], dv = dev(last, m.k), k = rank(last, m.k);
+    h += '<section class="mcard"><div class="mc-h"><span class="mc-name">' + m.l + '</span>' + (m.en ? '<span class="mc-en">' + m.en + '</span>' : '') + '</div>' +
+      '<div class="mc-body"><span class="mc-val">' + fmt(v, m.k) + '<small>' + m.u + '</small></span>' + (prev ? arrow(prev[m.k], v, m.k) : '') + '</div>' +
+      '<div class="mc-rank">' + (k ? '<b>' + k.n + '人中 ' + k.r + '位</b>' : '—') + '<span>偏差値 ' + (dv == null ? '—' : dv.toFixed(0)) + '</span></div>' + meter(dv) + explain(m.k, last) + '</section>';
+  });
+  h += '</div><p class="note">' + VALD_NOTE + '</p>';
+  // 可動域：部位ごとに左右を並べ、下に判定
+  var rr = rom(last);
+  h += '<h2 class="grp">可動域（順位はつけず、基準と左右差で見る）</h2><div class="rjoints">' + romJoints(last, prev) + '</div>';
+  h += '<section class="romcheck"><h3>チェック</h3><ul>' + rr.map(function (c) { return '<li class="' + c.st + '"><span class="rc-st">' + romCell(c) + '</span><span class="rc-l">' + c.label + (c.val != null ? '：<b>' + c.val + (typeof c.val === 'number' ? '°' : '') + '</b>' : '') + '</span><small>' + c.why + '</small></li>'; }).join('') + '</ul></section>';
+  // 球の中身
+  var FB = fbClass(last);
+  h += '<h2 class="grp">球の中身（順位はつけない）</h2><section class="pitchsec"><div class="pitch-flex"><div>' + movement(last) + '<p class="note">点＝球種ごとの平均。色の帯＝ストレートの区分（縦：伸び・標準・垂れ／横：スライダー寄り・標準・シュート寄り）。上ほど「伸びる」、右ほど「シュート」' + (last.arm === '左投げ' ? '（左投手なので左右を反転して表示）' : '') + '。</p></div><div class="pitch-info">' +
+    (FB ? '<div class="plan"><div class="plan-q">ストレートの変化量</div><p class="fb-cls"><span class="fbv fbv-' + FB.vi + '">縦：' + FB.v + '</span><span class="fbh fbh-' + FB.hi + '">横：' + FB.h + '</span></p><p class="note">縦 ' + fmt(last.vb) + 'cm・横 ' + fmt(last.hb) + 'cm（ストレートの平均）。縦は47cm以上＝伸び／39〜46cm＝標準／38cm以下＝垂れ。横は8cm以下＝スライダー寄り／9〜29cm＝標準／30cm以上＝シュート寄り' + (last.arm === '左投げ' ? '（左投手は左右を反転して判定）' : '') + '。</p></div>' : '');
+  ['eff', 'gyro', 'vb', 'hb'].forEach(function (k) {
+    h += '<div class="pi"><span class="pi-n">' + EXPLAIN[k].s + '（ストレート）</span><span class="pi-v">' + fmt(last[k]) + '</span>' + (prev ? '<span class="pi-p">前回 ' + fmt(prev[k]) + '</span>' : '') + explain(k) + '</div>';
+  });
+  h += '</div></div><details class="ex"><summary>球種ごとの数字（表）</summary><div class="scroll"><table><tr><th class="l">球種</th><th>球数</th><th>平均球速</th><th>最高球速</th><th>回転数</th><th>トゥルースピン</th><th>回転効率</th><th>ジャイロ</th><th>縦変化</th><th>横変化</th></tr>';
+  Object.keys(last.pitches).sort(function (a, b) { return a === 'ST' ? -1 : b === 'ST' ? 1 : 0; }).forEach(function (tt) {
+    var x = last.pitches[tt]; h += '<tr><td class="l">' + tt + '</td><td>' + x.n + '</td><td>' + fmt(x.speed) + '</td><td>' + fmt(x.speedMax) + '</td><td>' + fmt(x.spin, 'spin') + '</td><td>' + fmt(x.tspin, 'tspin') + '</td><td>' + fmt(x.eff) + '</td><td>' + fmt(x.gyro) + '</td><td>' + fmt(x.vb) + '</td><td>' + fmt(x.hb) + '</td></tr>';
+  });
+  h += '</table></div></details></section>';
+  // これまでの推移
+  if (rs.length > 1) {
+    h += '<details class="ex history"><summary>これまでの記録（' + rs.length + '回）</summary><div class="scroll"><table><tr><th class="l">項目</th>' + rs.map(function (r) { return '<th>' + SH(r.date) + '</th>'; }).join('') + '</tr>';
+    items.forEach(function (m) { h += '<tr><td class="l">' + m.l + '</td>' + rs.map(function (r) { return '<td>' + fmt(r[m.k], m.k) + '</td>'; }).join('') + '</tr>'; });
+    h += '</table></div></details>';
+  }
+  main(h);
+}
+
+// ===== 入力状況（先生・トレーナー） =====
+function drawStatus() {
+  var d = S.date, it = S.D.items;
+  var names = NAMES();
+  var has = function (r, list) { if (!r) return 0; return list.filter(function (m) { return r[m.k] != null; }).length; };
+  var h = '<section><h2>' + JP(d) + '　入力状況</h2><p class="note">去年までに測った人＋今回入れた人。数字は「入った項目の数／全部の数」。名前を押すとその人の結果。</p><div class="scroll"><table><tr><th class="l">名前</th><th>ラプソード（球数）</th><th>VALD</th><th>可動域</th><th>握力</th><th>体</th><th class="l">最後に入れた時刻</th></tr>';
+  names.forEach(function (n) {
+    var r = rec(d, n);
+    var cell = function (k, all) { return '<td class="' + (k === 0 ? 'warn' : k < all ? 'part' : 'ok') + '">' + k + '／' + all + '</td>'; };
+    h += '<tr><td class="l"><a href="#" data-n="' + esc(n) + '">' + esc(n) + '</a></td>' +
+      '<td class="' + (r && r.pl.length ? 'ok' : 'warn') + '">' + (r ? r.pl.length : 0) + '球</td>' + cell(has(r, it.vald), it.vald.length) + cell(has(r, it.rom), it.rom.length) + cell(has(r, it.grip), it.grip.length) + cell(has(r, it.info), it.info.length) +
+      '<td class="l ref">' + (r && r.updated ? esc(String(r.updated).replace('T', ' ').slice(0, 16)) : '') + '</td></tr>';
+  });
+  h += '</table></div>' + (S.D.sheetUrl ? '<p><a href="' + S.D.sheetUrl + '" target="_blank">スプレッドシート（元のデータ）を開く</a></p>' : '') + '</section>';
+  main(h);
+  document.querySelectorAll('a[data-n]').forEach(function (a) { a.onclick = function (e) { e.preventDefault(); S.player = a.dataset.n; go('player'); }; });
+}
+
+function drawAbout() {
+  var card = function (k) { var e = EXPLAIN[k]; return '<section class="mcard"><div class="mc-h"><span class="mc-name">' + (e.en || e.s) + '</span>' + (e.en ? '<span class="mc-en">' + e.s + '</span>' : '') + '</div><p>' + e.what + '</p><p class="note">' + e.read + '</p></section>'; };
+  main('<h2 class="grp">ラプソード（投球）</h2><div class="cards2">' + ['speed_max', 'spin', 'tspin', 'eff', 'gyro', 'vb', 'hb'].map(card).join('') + '</div>' +
+    '<h2 class="grp">VALD（反動をつけたジャンプ）</h2><p class="note">VALDは、1回のジャンプを「しゃがむ（ブレーキ）→ 押す → 跳ぶ」に分けて測ります。野球にいちばん近いのは<b>ブレーキ</b>の局面＝投球の踏み出し脚、打撃の踏み込みで「前に進む体を止めて、回転に変える」動きです。</p><div class="cards2">' + ['jh', 'ci', 'ci100', 'rfd', 'pp'].map(card).join('') + '</div><p class="note">' + VALD_NOTE + '</p>' +
+    '<h2 class="grp">握力・可動域</h2><div class="cards2">' + card('grip_throw') +
+    '<section class="mcard"><div class="mc-h"><span class="mc-name">可動域</span></div><p>広いほど良いわけではないので、<b>順位はつけません</b>。基準に届いているかと、左右の差で見ます。</p><p class="note">肩は、投げる側のトータルアーク（内旋＋外旋）が反対側より5°より大きく少ないと、肩のけがが約1.9倍。投げる側の外旋が反対側より5°以上多くないと約2.2倍（プロ投手の研究・Wilk 2011/2015）。全員分は先生・トレーナーの画面だけに出ます。</p></section></div>' +
+    '<section><h2>偏差値の見かた</h2><p>50＝チームの真ん中、60＝上から約16%、40＝下から約16%。<b>同じ日に測った十数人の中での位置</b>なので、全国の基準ではありません。今回の分は、入力した人が増えるたびに少し動きます。</p></section>');
+}
+
+start();
+</script>
+</body></html>
