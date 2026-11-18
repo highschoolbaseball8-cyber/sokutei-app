@@ -68,6 +68,10 @@ button.mini .spin.sm{border-color:#c5ccd6;border-top-color:#1f3a5f;margin:0}
 .ach-t{font-size:12px;color:#5a6270}.ach-bar{position:relative;height:8px;margin-top:4px;border-radius:99px;background:#eef2f6;overflow:hidden}
 .ach-fill{position:absolute;top:0;bottom:0;left:0;border-radius:99px}.ach-fill.d1{background:#80b2dd}.ach-fill.d2{background:#b8c3ce}.ach-fill.d3{background:#f3c967}.ach-fill.d4{background:#ed9a50}.ach-fill.d5{background:#df7138}
 .hero-ach{display:flex;gap:8px;align-items:baseline;margin:-2px 0 10px}.hero-ach b{font-size:26px;font-weight:800}.hero-ach .chg{color:#fff;background:#ffffff29}
+/* 可動域：左右それぞれ数字のすぐ下に評価・変化球の評価（11/18・既存の配色から） */
+.rj-chk{margin:8px 0 0;padding:6px 0 0;list-style:none;border-top:1px dashed #e7ebef}.rj-chk li{display:grid;grid-template-columns:auto 1fr;gap:1px 6px;padding:4px 0;font-size:12px}.rj-chk li small{grid-column:2;color:#5a6270;font-size:11px;line-height:1.45}.rj-chk li.warn{background:#fff8ec}
+.secs{margin-top:12px}.secs h3{margin:0 0 8px;font-size:15px}.sec{margin:0 0 8px;padding:10px 12px;border-left:5px solid #aeb8c4;border-radius:10px;background:#f6f7f9}.sec.sec-ok{border-left-color:#50a874;background:#f5fbf7}.sec.sec-work{border-left-color:#dc942c;background:#fff8ec}
+.sec-h{display:flex;justify-content:space-between;gap:8px;align-items:baseline}.sec-badge{padding:2px 8px;border-radius:999px;background:#fff;font-size:11px;font-weight:700;color:#394556}.sec-n{margin:4px 0;font-size:12px;color:#394556}.sec ul{margin:4px 0;padding-left:18px;font-size:13px;line-height:1.55}
 </style>
 
 <title>測定</title><meta name="robots" content="noindex"></head>
@@ -180,7 +184,7 @@ function build() {
     Object.keys(by).forEach(function (t) {
       var ps = by[t], avg = function (f) { var v = ps.map(function (p) { return N(p[f]); }).filter(function (x) { return x != null; }); return v.length ? v.reduce(function (a, b) { return a + b; }, 0) / v.length : null; };
       var sp = ps.map(function (p) { return N(p.speed); }).filter(function (x) { return x != null; });
-      r.pitches[t] = { n: ps.length, speed: avg('speed'), speedMax: sp.length ? Math.max.apply(null, sp) : null, spin: avg('spin'), eff: avg('eff'), tspin: avg('tspin'), gyro: avg('gyro'), vb: avg('vb'), hb: avg('hb'), ext: avg('ext'), rh: avg('rh'), rva: avg('rva') };
+      r.pitches[t] = { n: ps.length, speed: avg('speed'), speedMax: sp.length ? Math.max.apply(null, sp) : null, spin: avg('spin'), eff: avg('eff'), tspin: avg('tspin'), gyro: avg('gyro'), vb: avg('vb'), hb: avg('hb'), ext: avg('ext'), rh: avg('rh'), rs: avg('rs'), rva: avg('rva') };
     });
     var st = r.pitches.ST || {};
     r.speed_max = st.speedMax == null ? null : st.speedMax; r.spin = st.spin == null ? null : st.spin; r.tspin = st.tspin == null ? null : st.tspin;
@@ -246,6 +250,14 @@ function rom(r) {
 var romWarn = function (r) { return rom(r).filter(function (x) { return x.st === 'warn'; }).length; };
 var romCell = function (x) { return x.st === 'none' ? '<span class="ref">—</span>' : x.st === 'ok' ? '<span class="ok">○ 基準内</span>' : x.st === 'ref' ? '<span class="ref">参考</span>' : '<span class="warn">△ 注意</span>'; };
 
+// 可動域を測らない日（11/23は測らない＝保田さん 11/18）。入力にも結果にも可動域を出さない
+var NO_ROM_DATES = ['2026-11-23'];
+var ROM_K = ['sh_ir', 'sh_er', 'hip_ir', 'hip_er', 'th'];
+function hasRom(r) { return r && ROM_K.some(function (k) { return r[k + '_L'] != null || r[k + '_R'] != null; }); }
+function noRom(r) { return NO_ROM_DATES.indexOf(r.date) >= 0; }   // この日の結果では可動域を全部出さない（保田さん 11/18）
+function romSrc(r) { if (hasRom(r)) return r; return R.filter(function (x) { return x.name === r.name && x.date < r.date && hasRom(x); }).sort(function (a, b) { return a.date < b.date ? 1 : -1; })[0] || r; }
+function romPrev(r) { return R.filter(function (x) { return x.name === r.name && x.date < r.date && hasRom(x); }).sort(function (a, b) { return a.date < b.date ? 1 : -1; })[0]; }
+
 // ===== 入力 =====
 function who() { return S.D.role === 'staff' ? { name: S.player, pos: (latest(S.player) || {}).pos || '投手', arm: (latest(S.player) || {}).arm || '右投げ' } : S.me; }
 var PF = ['speed', 'spin', 'eff', 'tspin', 'axis', 'gyro', 'vb', 'hb', 'ext', 'rh', 'rs', 'rva', 'rha'];
@@ -275,10 +287,11 @@ function drawInput() {
     '<p class="note">単位：球速 km/h・回転数 rpm・回転効率 %・変化量 cm・エクステンション・リリース高・左右 m・リリース角 °。回転軸は「1:30」の形。横変化はラプソードの表示のまま。</p></section>';
   h += '<section><h2>VALD（Countermovement Jump）</h2><div class="grid">' + it.vald.map(field).join('') + '</div><p class="note">割合（Concentric Impulse-100ms : Concentric Impulse）は空欄でも、0.1秒の力÷踏み切る力で自動で出します。</p></section>';
   h += '<section><h2>体</h2><div class="grid">' + it.info.map(field).join('') + '</div></section>';
-  h += '<h2 class="grp">可動域（左右を見まちがえないように）</h2><div class="rjoints">' +
+  var noRom = NO_ROM_DATES.indexOf(S.date) >= 0;
+  h += (noRom ? '<h2 class="grp">握力</h2><p class="note">今回は可動域を測りません。</p><div class="rjoints">' : '<h2 class="grp">可動域（左右を見まちがえないように）</h2><div class="rjoints">' +
     lr('肩（腕を横に上げた位置）', [['内旋', 'sh_ir', '°'], ['外旋', 'sh_er', '°']], T === 'L' ? '投げる側' : '', T === 'R' ? '投げる側' : '') +
     lr('股関節', [['内旋', 'hip_ir', '°'], ['外旋', 'hip_er', '°']], T === 'R' ? '踏み出し脚' : '軸脚', T === 'L' ? '踏み出し脚' : '軸脚') +
-    lr('胸郭回旋', [['回旋', 'th', '°']], '', '') +
+    lr('胸郭回旋', [['回旋', 'th', '°']], '', '')) +
     lr('3指握力', [['握力', 'grip', 'kg']], T === 'L' ? '投げる手' : '', T === 'R' ? '投げる手' : '') + '</div>';
   h += '<section class="sticky"><div id="chkB"></div><button class="primary wide" id="saveB">体の数字を保存</button></section>';
   main(h);
@@ -488,7 +501,7 @@ function diagnose(r) {
   var vald = ['jh', 'pti', 'ci', 'ci100', 'ci_ratio', 'edi'].map(function (k) { return dev(r, k); }).filter(function (v) { return v != null; });
   var body = vald.length ? vald.reduce(function (a, b) { return a + b; }, 0) / vald.length : null;
   var velo = dev(r, 'speed_max');
-  var warn = rom(r).filter(function (x) { return x.st === 'warn'; });
+  var warn = noRom(r) ? [] : rom(r).filter(function (x) { return x.st === 'warn'; });
   var out = { type: '', lines: [] };
   // 外の基準＝高校3年生のトップ（Progress社の最大値）に対して何%か
   var A = S.D.items.vald.filter(function (m) { return m.rank; }).map(function (m) { return { m: m, a: ach(r, m.k) }; }).filter(function (x) { return x.a != null; }).sort(function (x, y) { return x.a - y.a; });
@@ -528,10 +541,77 @@ function romJoints(r, p) {
         j.rows.map(function (row) {
           var v = r[row[1] + '_' + s], pv = p ? p[row[1] + '_' + s] : null, ok = row[2] == null || v == null ? null : v >= row[2];
           return '<div class="rj-row"><span class="rj-k">' + row[0] + '</span><span class="rj-v' + (ok === false ? ' low' : '') + '">' + (v == null ? '—' : v + '°') + '</span>' + (pv != null ? '<span class="rj-p">前回 ' + pv + '</span>' : '') + '</div>';
-        }).join('') + '</div>';
+        }).join('') + romSideChecks(r, j.n, s, T) + '</div>';
     };
     return '<section class="rjoint"><div class="rj-h">' + j.n + '<span class="rj-ref">基準 ' + j.rows.map(function (x) { return x[0] + ' ' + x[3]; }).join('・') + '</span></div><div class="rj-lr">' + side('L') + side('R') + '</div></section>';
   }).join('');
+}
+
+// 左右それぞれの評価（その側の数字のすぐ下に出す）。st: ok／warn／ref
+function romSideChecks(r, jn, s, T) {
+  var O = s === 'L' ? 'R' : 'L', g = function (k) { return r[k]; }, out = [];
+  var add = function (st, t, why) { out.push('<li class="' + st + '"><span class="rc-st">' + (st === 'ok' ? '<span class="ok">○ 基準内</span>' : st === 'warn' ? '<span class="warn">△ 注意</span>' : '<span class="ref">参考</span>') + '</span><span class="rc-l">' + t + '</span>' + (why ? '<small>' + why + '</small>' : '') + '</li>'); };
+  var has = function (k) { return g(k) != null; };
+  if (jn.indexOf('肩') === 0) {
+    if (has('sh_ir_' + s)) add(g('sh_ir_' + s) >= 45 ? 'ok' : 'warn', '内旋 ' + g('sh_ir_' + s) + '°', '基準 45〜60°');
+    if (s === T) {
+      if (has('sh_er_' + s)) add(g('sh_er_' + s) >= 120 ? 'ok' : 'warn', '外旋 ' + g('sh_er_' + s) + '°', '基準 120°以上（MAST）');
+      if (has('sh_ta_' + s)) add(g('sh_ta_' + s) >= 160 ? 'ok' : 'warn', 'トータル ' + g('sh_ta_' + s) + '°', '基準 160〜190°（MAST）');
+      if (has('sh_er_' + s) && has('sh_er_' + O)) { var d = g('sh_er_' + s) - g('sh_er_' + O); add(d >= 5 ? 'ok' : 'warn', '外旋が反対側より ' + (d >= 0 ? '+' : '') + d + '°', '5°以上多くないと、肩のけがが約2.2倍（Wilk 2015）'); }
+      if (has('sh_ta_' + s) && has('sh_ta_' + O)) { var t = g('sh_ta_' + s) - g('sh_ta_' + O); add(t >= -5 ? 'ok' : 'warn', 'トータルが反対側より ' + (t >= 0 ? '+' : '') + t + '°', '5°より大きく少ないと、肩のけがが約1.9倍（Wilk 2011）'); }
+      if (has('sh_ir_' + s) && has('sh_ir_' + O)) { var i = g('sh_ir_' + s) - g('sh_ir_' + O); add('ref', '内旋が反対側より ' + (i >= 0 ? '+' : '') + i + '°', '参考。20°以上少ない＝GIRD。けがとのつながりははっきりしていない'); }
+    } else {
+      if (has('sh_er_' + s)) add('ref', '外旋 ' + g('sh_er_' + s) + '°', '投げる側と比べるための基準の側');
+    }
+  } else if (jn.indexOf('股関節') === 0) {
+    if (has('hip_ir_' + s)) add(g('hip_ir_' + s) >= 45 ? 'ok' : 'warn', '内旋 ' + g('hip_ir_' + s) + '°', '基準 45°以上（MAST）' + (s !== T ? '。踏み出し脚の内旋が少ないと、けがが増えるという報告がある' : ''));
+    if (has('hip_er_' + s)) add(g('hip_er_' + s) >= 45 ? 'ok' : 'warn', '外旋 ' + g('hip_er_' + s) + '°', '基準 45°以上（MAST）');
+    if (has('hip_ta_' + s)) add(g('hip_ta_' + s) >= 100 ? 'ok' : 'warn', 'トータル ' + g('hip_ta_' + s) + '°', '基準 100°以上（MAST）');
+  } else {
+    if (has('th_L') && has('th_R')) { var th = Math.abs(g('th_L') - g('th_R')); add(th <= 10 ? 'ok' : 'warn', '左右差 ' + th + '°', '10°以内なら問題なし'); }
+  }
+  return out.length ? '<ul class="rj-chk">' + out.join('') + '</ul>' : '';
+}
+
+// ===== 変化球：ストレートを基準に評価（ピッチングマスタークラスの資料・セカンダリーピッチ） =====
+// 単位はアプリに合わせて km/h・cm（1mph＝1.609km/h、1インチ＝2.54cm）
+var MPH = 1.609, IN = 2.54;
+var SEC_RULE = {
+  SL: { n: 'スライダー', speed: ['le', 9], move: ['glove', 10], txt: 'ストレートとの球速差が9mph（14.5km/h）以内、または横に大きく曲がる（10インチ＝25.4cm超）と武器になる' },
+  VSL: { n: '縦スライダー', speed: ['le', 9], move: ['glove', 10], txt: 'スライダーと同じ物差し：球速差14.5km/h以内、または横25.4cm超' },
+  CB: { n: 'カーブ', speed: ['le', 13], move: ['drop', 25], txt: 'ストレートとの球速差が13mph（20.9km/h）以内、または縦の落差がストレートより25インチ（63.5cm）超で武器になる' },
+  CH: { n: 'チェンジアップ', speed: ['gt', 9], move: ['drop', 6], txt: 'ストレートより沈む（6インチ＝15.2cm超）か、球速差が9mph（14.5km/h）超あると武器になる' },
+  SP: { n: 'スプリット', speed: ['gt', 9], move: ['drop', 6], txt: 'オフスピードの物差し（チェンジアップと同じ）：沈み15.2cm超、または球速差14.5km/h超' },
+  FK: { n: 'フォーク', speed: ['gt', 9], move: ['drop', 6], txt: 'オフスピードの物差し（チェンジアップと同じ）：沈み15.2cm超、または球速差14.5km/h超' }
+};
+function secondary(r) {
+  var st = r.pitches.ST; if (!st || st.speed == null) return '';
+  var flip = r.arm === '左投げ' ? -1 : 1, out = '';
+  Object.keys(r.pitches).filter(function (t) { return t !== 'ST'; }).forEach(function (t) {
+    var x = r.pitches[t], R = SEC_RULE[t], lines = [], ok = false;
+    var dSp = x.speed != null ? st.speed - x.speed : null;                               // 球速差（＋＝ストレートより遅い）
+    var drop = x.vb != null && st.vb != null ? st.vb - x.vb : null;                      // 縦の差（＋＝ストレートより落ちる）
+    var glove = x.hb != null ? -flip * x.hb : null;                                      // 横（＋＝スライダー方向＝グラブ側）
+    var dH = x.hb != null && st.hb != null ? flip * (x.hb - st.hb) : null;               // 横の差（＋＝ストレートよりシュート側）
+    var nums = '球速 ' + fmt(x.speed) + 'km/h（ストレートより ' + (dSp == null ? '—' : (dSp >= 0 ? '−' : '+') + Math.abs(dSp).toFixed(1)) + '）・縦の差 ' + (drop == null ? '—' : (drop >= 0 ? drop.toFixed(1) + 'cm 落ちる' : (-drop).toFixed(1) + 'cm 浮く')) + '・横の差 ' + (dH == null ? '—' : Math.abs(dH).toFixed(1) + 'cm ' + (dH >= 0 ? 'シュート側' : 'スライダー側'));
+    if (R) {
+      var lim = R.speed[1] * MPH;
+      if (dSp != null) {
+        if (R.speed[0] === 'le') { if (dSp <= lim) { ok = true; lines.push('◎ 球速差 ' + dSp.toFixed(1) + 'km/h ＝ 14.5km/h以内の条件を満たしている'.replace('14.5', lim.toFixed(1))); } else lines.push('球速：あと <b>' + (dSp - lim).toFixed(1) + 'km/h</b> 速くなると条件（ストレートとの差 ' + lim.toFixed(1) + 'km/h以内）'); }
+        else { if (dSp > lim) { ok = true; lines.push('◎ 球速差 ' + dSp.toFixed(1) + 'km/h ＝ ' + lim.toFixed(1) + 'km/h超の条件を満たしている'); } else lines.push('球速：あと <b>' + (lim - dSp).toFixed(1) + 'km/h</b> 遅くなると条件（ストレートとの差 ' + lim.toFixed(1) + 'km/h超）'); }
+      }
+      var mLim = R.move[1] * IN;
+      if (R.move[0] === 'glove' && glove != null) { if (glove > mLim) { ok = true; lines.push('◎ 横の曲がり ' + glove.toFixed(1) + 'cm ＝ ' + mLim.toFixed(1) + 'cm超の条件を満たしている'); } else lines.push('変化：あと <b>' + (mLim - glove).toFixed(1) + 'cm</b> 横に曲がると条件（' + mLim.toFixed(1) + 'cm超）'); }
+      if (R.move[0] === 'drop' && drop != null) { if (drop > mLim) { ok = true; lines.push('◎ ストレートより ' + drop.toFixed(1) + 'cm 落ちる ＝ ' + mLim.toFixed(1) + 'cm超の条件を満たしている'); } else lines.push('変化：あと <b>' + (mLim - drop).toFixed(1) + 'cm</b> 落ちると条件（ストレートとの差 ' + mLim.toFixed(1) + 'cm超）'); }
+    } else lines.push('この球種は資料に物差しがないので、ストレートとの差だけ出しています。差が大きいほど、ストレートと見分けにくい組み合わせになります。');
+    // リリースの位置：ストレートと 2インチ（5cm）以内にそろえたい
+    if (x.rh != null && st.rh != null) {
+      var dr = Math.sqrt(Math.pow((x.rh - st.rh) * 100, 2) + (x.rs != null && st.rs != null ? Math.pow((x.rs - st.rs) * 100, 2) : 0));
+      lines.push((dr <= 5.1 ? '◎ ' : '△ ') + 'リリースの位置がストレートと ' + dr.toFixed(1) + 'cm 違う（5cm＝2インチ以内にそろえたい。ずれると打者に球種がばれやすい）');
+    }
+    out += '<div class="sec' + (R ? (ok ? ' sec-ok' : ' sec-work') : '') + '"><div class="sec-h"><b>' + (R ? R.n : ({ CT: 'カットボール', '2S': 'ツーシーム', SI: 'シンカー', VST: '高速系' })[t] || t) + '（' + t + '）</b>' + (R ? '<span class="sec-badge">' + (ok ? '武器の条件を満たしている' : 'あと少し') + '</span>' : '') + '</div><p class="sec-n">' + nums + '</p><ul>' + lines.map(function (l) { return '<li>' + l + '</li>'; }).join('') + '</ul>' + (R ? '<p class="note">' + R.txt + '（ピッチングマスタークラスの資料）。' + (t === 'SL' || t === 'VSL' ? '横に曲がる球は、左右逆の打者には効きにくいので注意。' : '') + '</p>' : '') + '</div>';
+  });
+  return out ? '<div class="secs"><h3>変化球の評価（ストレートを基準に）</h3>' + out + '</div>' : '';
 }
 
 // ===== 絵 =====
@@ -605,7 +685,7 @@ function drawTeam() {
   if (S.f.grp === 'all' || S.f.grp === 'VALD') h += board('VALD　高3トップに対して', 'ach', rs, achAll, 'VALD6項目の達成率の平均（100%＝高校3年生のトップ）');
   RANKED.forEach(function (m) { if (S.f.grp !== 'all' && S.f.grp !== m.g) return; h += board(m.l, m.k, rs, function (r) { return r[m.k]; }, (m.en ? m.en + '・' : '') + m.u + (m.goal ? '・高3トップ ' + m.goal + m.u : m.ref ? '・基準 ' + m.ref : '')); });
   if (staff) {
-    var warn = rs.map(function (r) { return { r: r, w: rom(r).filter(function (x) { return x.st === 'warn'; }) }; }).filter(function (x) { return x.w.length; });
+    var warn = rs.map(function (r) { return { r: r, w: noRom(r) ? [] : rom(r).filter(function (x) { return x.st === 'warn'; }) }; }).filter(function (x) { return x.w.length; });
     if (warn.length) h += '<section class="board romwarn"><div class="board-h"><h2>可動域で注意がある選手</h2><span class="board-sub">先生・トレーナーだけに表示</span></div><ul>' + warn.map(function (x) { return '<li><a href="#" data-n="' + esc(x.r.name) + '">' + esc(x.r.name) + '</a>：' + x.w.map(function (w) { return w.label; }).join('／') + '</li>'; }).join('') + '</ul></section>';
   }
   h += '</div>';
@@ -652,8 +732,7 @@ function drawPlayer(n) {
   h += '</div><p class="note">' + VALD_NOTE + '</p>';
   // 可動域：部位ごとに左右を並べ、下に判定
   var rr = rom(last);
-  h += '<h2 class="grp">可動域（順位はつけず、基準と左右差で見る）</h2><div class="rjoints">' + romJoints(last, prev) + '</div>';
-  h += '<section class="romcheck"><h3>チェック</h3><ul>' + rr.map(function (c) { return '<li class="' + c.st + '"><span class="rc-st">' + romCell(c) + '</span><span class="rc-l">' + c.label + (c.val != null ? '：<b>' + c.val + (typeof c.val === 'number' ? '°' : '') + '</b>' : '') + '</span><small>' + c.why + '</small></li>'; }).join('') + '</ul></section>';
+  if (!noRom(last)) h += '<h2 class="grp">可動域（順位はつけず、基準と左右差で見る）</h2><div class="rjoints">' + romJoints(last, romPrev(last)) + '</div>';
   // 球の中身
   var FB = fbClass(last);
   h += '<h2 class="grp">球の中身（順位はつけない）</h2><section class="pitchsec"><div class="pitch-flex"><div>' + movement(last) + '<p class="note">点＝球種ごとの平均。色の帯＝ストレートの区分（縦：伸び・標準・垂れ／横：カット寄り・標準・シュート寄り）。上ほど「伸びる」、右ほど「シュート」' + (last.arm === '左投げ' ? '（左投手なので左右を反転して表示）' : '') + '。</p></div><div class="pitch-info">' +
@@ -661,7 +740,7 @@ function drawPlayer(n) {
   ['eff', 'gyro', 'vb', 'hb'].forEach(function (k) {
     h += '<div class="pi"><span class="pi-n">' + EXPLAIN[k].s + '（ストレート）</span><span class="pi-v">' + fmt(last[k]) + '</span>' + (prev ? '<span class="pi-p">前回 ' + fmt(prev[k]) + '</span>' : '') + explain(k) + '</div>';
   });
-  h += '</div></div><details class="ex"><summary>球種ごとの数字（表）</summary><div class="scroll"><table><tr><th class="l">球種</th><th>球数</th><th>平均球速</th><th>最高球速</th><th>回転数</th><th>トゥルースピン</th><th>回転効率</th><th>ジャイロ</th><th>縦変化</th><th>横変化</th><th>エクステンション</th><th>リリース高</th><th>リリース角(縦)</th></tr>';
+  h += '</div></div>' + secondary(last) + '<details class="ex"><summary>球種ごとの数字（表）</summary><div class="scroll"><table><tr><th class="l">球種</th><th>球数</th><th>平均球速</th><th>最高球速</th><th>回転数</th><th>トゥルースピン</th><th>回転効率</th><th>ジャイロ</th><th>縦変化</th><th>横変化</th><th>エクステンション</th><th>リリース高</th><th>リリース角(縦)</th></tr>';
   Object.keys(last.pitches).sort(function (a, b) { return a === 'ST' ? -1 : b === 'ST' ? 1 : 0; }).forEach(function (tt) {
     var x = last.pitches[tt]; h += '<tr><td class="l">' + tt + '</td><td>' + x.n + '</td><td>' + fmt(x.speed) + '</td><td>' + fmt(x.speedMax) + '</td><td>' + fmt(x.spin, 'spin') + '</td><td>' + fmt(x.tspin, 'tspin') + '</td><td>' + fmt(x.eff) + '</td><td>' + fmt(x.gyro) + '</td><td>' + fmt(x.vb) + '</td><td>' + fmt(x.hb) + '</td><td>' + (x.ext == null ? '—' : x.ext.toFixed(2)) + '</td><td>' + (x.rh == null ? '—' : x.rh.toFixed(2)) + '</td><td>' + fmt(x.rva) + '</td></tr>';
   });
@@ -685,7 +764,7 @@ function drawStatus() {
     var r = rec(d, n);
     var cell = function (k, all) { return '<td class="' + (k === 0 ? 'warn' : k < all ? 'part' : 'ok') + '">' + k + '／' + all + '</td>'; };
     h += '<tr><td class="l"><a href="#" data-n="' + esc(n) + '">' + esc(n) + '</a></td>' +
-      '<td class="' + (r && r.pl.length ? 'ok' : 'warn') + '">' + (r ? r.pl.length : 0) + '球</td>' + cell(has(r, it.vald), it.vald.length) + cell(has(r, it.rom), it.rom.length) + cell(has(r, it.grip), it.grip.length) + cell(has(r, it.info), it.info.length) +
+      '<td class="' + (r && r.pl.length ? 'ok' : 'warn') + '">' + (r ? r.pl.length : 0) + '球</td>' + cell(has(r, it.vald), it.vald.length) + (NO_ROM_DATES.indexOf(d) >= 0 ? '<td class="ref">今回なし</td>' : cell(has(r, it.rom), it.rom.length)) + cell(has(r, it.grip), it.grip.length) + cell(has(r, it.info), it.info.length) +
       '<td class="l ref">' + (r && r.updated ? esc(String(r.updated).replace('T', ' ').slice(0, 16)) : '') + '</td></tr>';
   });
   h += '</table></div>' + (S.D.sheetUrl ? '<p><a href="' + S.D.sheetUrl + '" target="_blank">スプレッドシート（元のデータ）を開く</a></p>' : '') + '</section>';
