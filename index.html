@@ -63,6 +63,11 @@
 .spin.sm{width:14px;height:14px;border-width:2px;margin-right:6px;border-color:#ffffff55;border-top-color:#fff}
 button.mini .spin.sm{border-color:#c5ccd6;border-top-color:#1f3a5f;margin:0}
 @keyframes spin{to{transform:rotate(360deg)}}
+/* 高3トップに対する達成率（11/18・Claudeが既存の配色から足した） */
+.ach{margin-top:8px}.ach-h{display:flex;justify-content:space-between;align-items:baseline;gap:6px;font-size:12px;color:#5a6270}.ach-n{font-size:17px;color:#1d2330}
+.ach-t{font-size:12px;color:#5a6270}.ach-bar{position:relative;height:8px;margin-top:4px;border-radius:99px;background:#eef2f6;overflow:hidden}
+.ach-fill{position:absolute;top:0;bottom:0;left:0;border-radius:99px}.ach-fill.d1{background:#80b2dd}.ach-fill.d2{background:#b8c3ce}.ach-fill.d3{background:#f3c967}.ach-fill.d4{background:#ed9a50}.ach-fill.d5{background:#df7138}
+.hero-ach{display:flex;gap:8px;align-items:baseline;margin:-2px 0 10px}.hero-ach b{font-size:26px;font-weight:800}.hero-ach .chg{color:#fff;background:#ffffff29}
 </style>
 
 <title>測定</title><meta name="robots" content="noindex"></head>
@@ -159,13 +164,14 @@ function go(v) {
 var R = [], STAT = {}, RANKED = [];
 function build() {
   var it = S.D.items;
-  RANKED = [].concat(it.pitchRank.map(function (m) { m.g = 'ラプソード'; return m; }), it.vald.map(function (m) { m.g = 'VALD'; return m; }), it.extraRank.map(function (m) { m.g = '握力'; return m; }));
+  RANKED = [].concat(it.pitchRank.map(function (m) { m.g = 'ラプソード'; return m; }), it.vald.filter(function (m) { return m.rank; }).map(function (m) { m.g = 'VALD'; return m; }), it.extraRank.map(function (m) { m.g = '握力'; return m; }));
   var map = {};
   S.D.body.forEach(function (b) { var k = b.date + '|' + b.name; var o = map[k] = Object.assign({}, b); Object.keys(o).forEach(function (x) { if (['id', 'date', 'name', 'pos', 'arm', 'updated'].indexOf(x) < 0) o[x] = N(o[x]); }); o.pl = []; });
   S.D.pitches.forEach(function (p) { var k = p.date + '|' + p.name; if (!map[k]) map[k] = { date: p.date, name: p.name, pos: '', arm: '', pl: [] }; map[k].pl.push(p); });
-  var know = {}; Object.keys(map).forEach(function (k) { var r = map[k], o = know[r.name] = know[r.name] || {}; if (r.pos) o.pos = r.pos; if (r.arm) o.arm = r.arm; });
+  var know = {}; Object.keys(map).forEach(function (k) { var r = map[k], o = know[r.name] = know[r.name] || {}; if (r.pos) o.pos = r.pos; if (r.arm) o.arm = r.arm; if (r.ht != null && (!o.htd || r.date > o.htd)) { o.ht = r.ht; o.htd = r.date; } });
   R = Object.keys(map).map(function (k) {
     var r = map[k];
+    if (r.ht == null && know[r.name] && know[r.name].ht != null) r.ht = know[r.name].ht;   // 身長を入れなかった日は、いちばん新しい身長で体重の目標を出す
     if (!r.pos && know[r.name]) r.pos = know[r.name].pos; if (!r.arm && know[r.name]) r.arm = know[r.name].arm;
     ['sh', 'hip'].forEach(function (j) { ['L', 'R'].forEach(function (s) { var a = r[j + '_ir_' + s], b = r[j + '_er_' + s]; if (r[j + '_ta_' + s] == null && a != null && b != null) r[j + '_ta_' + s] = a + b; }); });
     var by = {};
@@ -180,6 +186,7 @@ function build() {
     r.speed_max = st.speedMax == null ? null : st.speedMax; r.spin = st.spin == null ? null : st.spin; r.tspin = st.tspin == null ? null : st.tspin;
     r.eff = st.eff; r.gyro = st.gyro; r.vb = st.vb; r.hb = st.hb;
     r.grip_throw = r.arm === '左投げ' ? r.grip_L : r.grip_R;
+    if (r.ci_ratio == null && r.ci != null && r.ci100 != null && r.ci > 0) r.ci_ratio = Math.round(r.ci100 / r.ci * 1000) / 10;   // 空欄なら 0.1秒の力÷踏み切る力
     return r;
   });
   STAT = {};
@@ -202,6 +209,18 @@ function latest(n) { return R.filter(function (r) { return r.name === n; }).sort
 function prevOf(r) { return R.filter(function (x) { return x.name === r.name && x.date < r.date; }).sort(function (a, b) { return a.date < b.date ? 1 : -1; })[0]; }
 function dev(r, k) { var s = STAT[r.date] && STAT[r.date][k], x = r[k]; if (!s || x == null || !s.sd) return null; return 50 + 10 * (x - s.mean) / s.sd; }
 function rank(r, k) { var s = STAT[r.date] && STAT[r.date][k], x = r[k]; if (!s || x == null) return null; return { r: s.vals.filter(function (v) { return v > x; }).length + 1, n: s.n }; }
+// 目標＝Progress社の高校3年生の最大値（世代のトップ）。達成率＝本人÷目標×100
+function valdItem(k) { return S.D.items.vald.filter(function (m) { return m.k === k; })[0]; }
+function goalOf(r, k) { var m = valdItem(k); if (!m) return null; if (m.goalBy === 'ht-90') return r.ht ? r.ht - 90 : null; return m.goal || null; }
+function ach(r, k) { var g = goalOf(r, k), x = r[k]; return g && x != null ? x / g * 100 : null; }
+function achAll(r) { var v = S.D.items.vald.filter(function (m) { return m.rank; }).map(function (m) { return ach(r, m.k); }).filter(function (x) { return x != null; }); return v.length >= 3 ? v.reduce(function (a, b) { return a + b; }, 0) / v.length : null; }
+// 前回比は、両方で測った項目だけで平均を比べる（去年はPositive Takeoff Impulse・しゃがみ込みの力が無い）
+function achDiff(p, r) { var ks = S.D.items.vald.filter(function (m) { return m.rank && ach(p, m.k) != null && ach(r, m.k) != null; }); if (ks.length < 2) return ''; var av = function (x) { return ks.reduce(function (a, m) { return a + ach(x, m.k); }, 0) / ks.length; }; return arrow(av(p), av(r), 'x'); }
+var acls = function (a) { return a == null ? '' : a >= 100 ? 'd5' : a >= 90 ? 'd4' : a >= 80 ? 'd3' : a >= 70 ? 'd2' : 'd1'; };
+function achBar(r, k) {
+  var a = ach(r, k), g = goalOf(r, k), m = valdItem(k); if (a == null) return g ? '<div class="ach"><span class="ach-t">目標 ' + fmt(g, k) + m.u + '（高3トップ）</span></div>' : '';
+  return '<div class="ach"><div class="ach-h"><span class="ach-t">高3トップ（' + fmt(g, k) + m.u + '）に対して</span><b class="ach-n">' + Math.round(a) + '%</b></div><div class="ach-bar"><span class="ach-fill ' + acls(a) + '" style="width:' + Math.min(100, a) + '%"></span></div></div>';
+}
 function total(r) { var d = RANKED.map(function (m) { return dev(r, m.k); }).filter(function (x) { return x != null; }); return d.length >= 3 ? d.reduce(function (a, b) { return a + b; }, 0) / d.length : null; }
 function fmt(v, k) { if (v == null) return '—'; var big = ['rfd', 'pp', 'spin', 'tspin'].indexOf(k) >= 0 || Math.abs(v) >= 1000; return big ? Math.round(v).toLocaleString() : (Math.round(v * 10) / 10).toString(); }
 var dcls = function (x) { return x == null ? '' : x >= 65 ? 'd5' : x >= 57 ? 'd4' : x >= 50 ? 'd3' : x >= 43 ? 'd2' : 'd1'; };
@@ -254,7 +273,7 @@ function drawInput() {
     '<h3>手で足す</h3><div class="scroll"><table><tr><th class="l">球種</th>' + PH.map(function (x) { return '<th>' + x + '</th>'; }).join('') + '</tr><tbody id="newP"></tbody></table></div>' +
     '<button class="ghost" id="addRow">＋ 行を足す</button> <button class="primary" id="saveP">この球を保存</button><div id="chkP"></div>' +
     '<p class="note">単位：球速 km/h・回転数 rpm・回転効率 %・変化量 cm・エクステンション・リリース高・左右 m・リリース角 °。回転軸は「1:30」の形。横変化はラプソードの表示のまま。</p></section>';
-  h += '<section><h2>VALD（Countermovement Jump）</h2><div class="grid">' + it.vald.map(field).join('') + '</div></section>';
+  h += '<section><h2>VALD（Countermovement Jump）</h2><div class="grid">' + it.vald.map(field).join('') + '</div><p class="note">割合（Concentric Impulse-100ms : Concentric Impulse）は空欄でも、0.1秒の力÷踏み切る力で自動で出します。</p></section>';
   h += '<section><h2>体</h2><div class="grid">' + it.info.map(field).join('') + '</div></section>';
   h += '<h2 class="grp">可動域（左右を見まちがえないように）</h2><div class="rjoints">' +
     lr('肩（腕を横に上げた位置）', [['内旋', 'sh_ir', '°'], ['外旋', 'sh_er', '°']], T === 'L' ? '投げる側' : '', T === 'R' ? '投げる側' : '') +
@@ -284,7 +303,7 @@ function addRow(p) {
 // ===== 保存の前の点検（ありえない数字・入れまちがい） =====
 var RANGE = {
   bm: [30, 130, '体重'], ht: [130, 210, '身長'], age: [12, 25, '年齢'],
-  jh: [10, 80, 'Jump Height'], ci: [50, 400, 'Concentric Impulse'], ci100: [10, 300, 'Concentric Impulse – 100ms'], rfd: [500, 30000, 'Eccentric Braking RFD'], pp: [1000, 8000, 'Peak Power'],
+  jh: [10, 80, 'Jump Height'], pti: [80, 800, 'Positive Takeoff Impulse'], ci: [50, 400, 'Concentric Impulse'], ci100: [10, 300, 'Concentric Impulse – 100ms'], ci_ratio: [20, 100, 'Concentric Impulse-100ms : Concentric Impulse'], edi: [20, 400, 'Eccentric Deceleration Impulse'],
   sh_ir: [0, 100, '肩の内旋'], sh_er: [60, 180, '肩の外旋'], hip_ir: [0, 90, '股関節の内旋'], hip_er: [0, 90, '股関節の外旋'], th: [0, 90, '胸郭回旋'], grip: [5, 70, '3指握力'],
   speed: [50, 165, '球速'], spin: [100, 3500, '回転数'], eff: [0, 100, '回転効率'], tspin: [0, 3500, 'トゥルースピン'], gyro: [-90, 90, 'ジャイロ'], vb: [-80, 80, '縦変化'], hb: [-80, 80, '横変化'], ext: [0.5, 3, 'エクステンション'], rh: [0.5, 2.5, 'リリース高'], rs: [-1.5, 1.5, 'リリース左右'], rva: [-10, 10, 'リリース角(縦)'], rha: [-10, 10, 'リリース角(横)']
 };
@@ -300,6 +319,8 @@ function checkBody(f) {
   });
   ['L', 'R'].forEach(function (s) { var a = n('sh_ir_' + s), b = n('sh_er_' + s); if (a != null && b != null && a > b) out.push('肩' + (s === 'L' ? '（左）' : '（右）') + 'の内旋（' + a + '）が外旋（' + b + '）より大きいです。内旋と外旋が逆になっていませんか'); });
   if (n('ci') != null && n('ci') === n('ci100')) out.push('Concentric Impulse と Concentric Impulse – 100ms が同じ数字です。片方の入れまちがいではありませんか');
+  else if (n('ci') != null && n('ci100') != null && n('ci100') > n('ci')) out.push('Concentric Impulse – 100ms（' + n('ci100') + '）が Concentric Impulse（' + n('ci') + '）より大きいです。最初の0.1秒は全体より小さくなるはずです');
+  if (n('ci') != null && n('ci') > 0 && n('ci100') != null && n('ci_ratio') != null && Math.abs(n('ci100') / n('ci') * 100 - n('ci_ratio')) > 5) out.push('割合（' + n('ci_ratio') + '%）が、0.1秒の力÷踏み切る力（' + Math.round(n('ci100') / n('ci') * 100) + '%）と合いません。どれかの入れまちがいではありませんか');
   var t = function (a, b, lab) { var x = n(a), y = n(b); if (x != null && y != null && Math.abs(x - y) >= 30) out.push(lab + 'の左右の差が' + Math.abs(x - y) + '°あります。左右を逆に入れていませんか'); };
   t('sh_er_L', 'sh_er_R', '肩の外旋'); t('hip_ir_L', 'hip_ir_R', '股関節の内旋');
   return out;
@@ -382,11 +403,13 @@ var EXPLAIN = {
   gyro: { s: 'ジャイロ角度', what: '回転軸がキャッチャー方向をどれだけ向いているか。0°＝真横（回転が全部仕事をする）、90°＝真正面（変化しない）。', read: '<b>順位はつけません。</b>ジャイロは「悪い回転」ではなく、スライダーなどでは狙って使うもの。' },
   vb: { s: '縦の変化', what: '重力だけで落ちた場合と比べて、何cm落ちずに来たか。', read: '<b>順位はつけません。</b>大きい＝伸び系、小さい＝垂れ系。高校生の平均は40cm台前半（ラプソード・ジャパン）。型によって合う配球が違います。' },
   hb: { s: '横の変化', what: 'シュート方向（＋）・スライド方向（−）に何cm動いたか。', read: '<b>順位はつけません。</b>縦の変化と組み合わせて「球質」を決めます。' },
-  jh: { s: '跳躍高', en: 'Jump Height (Flight Time)', r: 'Jump Height', what: 'その場で反動をつけて跳んだ高さ（滞空時間から計算）。全体の出力を表す「結果」の数字。', read: '体重が軽いと出やすい。疲れても最後まで落ちにくいので、疲労の目安には向きません。' },
-  ci: { s: '踏み切る力', en: 'Concentric Impulse', r: 'Conc. Impulse', what: '体を押し上げる局面で、地面を押した力の総量。', read: '体重が重いほど大きく出ます。目安は<b>体重×3</b>（145km/h投手の基準・DIMENSIONING）。', calc: function (r) { return r.bm && r.ci ? '体重×3 ＝ ' + Math.round(r.bm * 3) + '（あなた ' + fmt(r.ci) + '）' : ''; } },
+  bm: { s: '体重', en: 'Body Mass', what: 'VALDに乗ったときの体重。', read: '<b>順位はつけません。</b>目標は<b>身長−90</b>（例：175cmなら85kg）。踏み切る力・しゃがみ込みの力は体重が重いほど大きく出るので、体を大きくすることも力を上げる近道です。', calc: function (r) { return r.ht ? '身長' + r.ht + 'cm − 90 ＝ 目標 ' + (r.ht - 90) + 'kg' + (r.bm ? '（あなた ' + fmt(r.bm) + 'kg）' : '') : ''; } },
+  jh: { s: '跳んだ高さ', en: 'Jump Height', r: 'Jump Height', what: 'その場で反動をつけて跳んだ高さ。全体の出力を表す「結果」の数字。', read: '体重が軽いと出やすい。疲れても最後まで落ちにくいので、疲労の目安には向きません。' },
+  pti: { s: '加速能力', en: 'Positive Takeoff Impulse', r: 'Takeoff Imp.', what: '体重を支える分を引いて、体を上に加速させた力の総量。これが大きいほど速く跳び出せる＝跳んだ高さを決める数字。', read: '体重が重いほど大きく出ます。跳んだ高さは「加速能力÷体重」で決まるので、体重を増やしながらこの数字を上げられると、重くて速い体になります。' },
+  ci: { s: '踏み切る力', en: 'Concentric Impulse', r: 'Conc. Impulse', what: '体を押し上げる局面で、地面を押した力の総量。', read: '体重が重いほど大きく出ます。' },
   ci100: { s: '0.1秒の力', en: 'Concentric Impulse – 100ms', r: 'Impulse 100ms', what: '押し始めて最初の0.1秒で出せた力。立ち上がりの速さ＝爆発力を表す「要因」の数字。', read: '遅い時間を見るほど、ただの筋力の強さに近づきます。速い動きの野球では、早い時間の力が大事。' },
-  rfd: { s: '止める力', en: 'Eccentric Braking RFD', r: 'Braking RFD', what: 'しゃがみ込んで止める局面で、どれだけ速くブレーキをかけられたか。', read: '<b>投球の踏み出し脚・打撃の踏み込みで「前に進む体を止めて、回転に変える」動きにいちばん近い数字。</b>中学投手の研究では、ブレーキ系の数字が球速といちばん強く関係していました。目安は<b>体重×9.8×11.6</b>。', calc: function (r) { return r.bm && r.rfd ? '体重×9.8×11.6 ＝ ' + Math.round(r.bm * 9.8 * 11.6).toLocaleString() + '（あなた ' + fmt(r.rfd, 'rfd') + '）' : ''; } },
-  pp: { s: '最大パワー', en: 'Peak Power', r: 'Peak Power', what: '押し上げる局面で出せたパワーの最大値。出力の天井を表す「結果」の数字。', read: '体重1kgあたりで見ると比べやすい。目安は<b>55W/kg</b>（150km/h投手）、MLBの平均は60W/kg。ただ中学投手の研究では、球速との関係は「止める力」より弱めでした。', calc: function (r) { return r.bm && r.pp ? 'あなたの体重1kgあたり ' + (r.pp / r.bm).toFixed(1) + ' W/kg' : ''; } },
+  ci_ratio: { s: '0.1秒の割合', en: 'Concentric Impulse-100ms : Concentric Impulse', r: '0.1秒の割合', what: '踏み切る力全体のうち、最初の0.1秒で出せた分が何%か。', read: '同じ力でも、早いうちに出せている人ほど高くなります。<b>力の「量」ではなく「出し方の速さ」</b>を見る数字なので、体重の影響を受けにくい。空欄なら「0.1秒の力÷踏み切る力」で自動で出します。', calc: function (r) { return r.ci && r.ci100 ? fmt(r.ci100) + ' ÷ ' + fmt(r.ci) + ' ＝ ' + (r.ci100 / r.ci * 100).toFixed(1) + '%' : ''; } },
+  edi: { s: 'しゃがみ込みの力', en: 'Eccentric Deceleration Impulse', r: 'Ecc. Decel. Imp.', what: 'しゃがみ込みながら、下に落ちる体にブレーキをかけて止めた力の総量。', read: '<b>投球の踏み出し脚・打撃の踏み込みで「前に進む体を止めて、回転に変える」動きにいちばん近い数字。</b>中学投手の研究では、ブレーキ系の数字が球速といちばん強く関係していました。' },
   grip_throw: { s: '握力', what: '人差し指・中指・親指の3本で握る力（投げる手）。', read: '指先でボールを押し出す力の目安。基準は30〜35kg。' }
 };
 var VALD_NOTE = '南平のこれまでのデータでは、跳ぶ力が高い人ほど球速が速い、という関係はほとんどありませんでした。だからこそ「体はあるのに球に変わっていない（→フォーム）」「技術で出している（→体を作れば伸びる）」のどちらかを見分ける材料になります。';
@@ -456,28 +479,27 @@ var LINK = {
   jh: '全身で地面を押す力の土台。球速の土台になる',
   ci: '地面を押す力の総量。体重を増やしつつ鍛えると、投げる力の土台が大きくなる',
   ci100: '短い時間で力を出す力。投球は一瞬の動作なので、速く力を出せるほど腕を速く振れる',
-  rfd: '踏み出し脚で体を止める力。前に進む勢いを回転に変える量が増え、球速に直結しやすい',
-  pp: '出力の天井。体重あたりで55W/kgが150km/h投手の目安',
+  pti: '体を速く押し出す力。踏み出しまでの勢い（並進のスピード）の土台になる',
+  ci_ratio: '力を出し始める速さ。一瞬で終わる投球では、同じ力でも早く出せるほうが使える',
+  edi: '踏み出し脚で体を止める力。前に進む勢いを回転に変える量が増え、球速に直結しやすい',
   grip_throw: '指先でボールを押す力。回転数と制球に効く'
 };
 function diagnose(r) {
-  var vald = ['jh', 'ci', 'ci100', 'rfd', 'pp'].map(function (k) { return dev(r, k); }).filter(function (v) { return v != null; });
+  var vald = ['jh', 'pti', 'ci', 'ci100', 'ci_ratio', 'edi'].map(function (k) { return dev(r, k); }).filter(function (v) { return v != null; });
   var body = vald.length ? vald.reduce(function (a, b) { return a + b; }, 0) / vald.length : null;
   var velo = dev(r, 'speed_max');
   var warn = rom(r).filter(function (x) { return x.st === 'warn'; });
   var out = { type: '', lines: [] };
-  // 外の基準（体重あたり。DIMENSIONINGの145km/h投手の基準）
-  var bench = [];
-  if (r.bm && r.pp) bench.push('最大パワー ' + (r.pp / r.bm).toFixed(1) + 'W/kg（目安55）');
-  if (r.bm && r.rfd) bench.push('止める力 ' + Math.round(r.rfd / (r.bm * 9.8 * 11.6) * 100) + '%（目安＝体重×9.8×11.6）');
-  if (r.bm && r.ci) bench.push('踏み切る力 ' + Math.round(r.ci / (r.bm * 3) * 100) + '%（目安＝体重×3）');
+  // 外の基準＝高校3年生のトップ（Progress社の最大値）に対して何%か
+  var A = S.D.items.vald.filter(function (m) { return m.rank; }).map(function (m) { return { m: m, a: ach(r, m.k) }; }).filter(function (x) { return x.a != null; }).sort(function (x, y) { return x.a - y.a; });
+  var aw = ach(r, 'bm');
   if (body != null && velo != null) {
     if (body >= 50 && velo >= 50) out.type = ['噛み合っている', '体の力も球速もチームの上位。体と技術の両方を少しずつ伸ばす段階。'];
     else if (body >= 50) out.type = ['技術が課題', '<b>体の力はあるのに、球速に変わり切っていない。</b>伸ばすのはフォーム側（踏み出し脚で体を止めて、回転に変える動き）。'];
     else if (velo >= 50) out.type = ['体が課題', '<b>技術で球速を出している。</b>体（筋力・パワー）を作れば、いちばん伸びしろが大きいタイプ。'];
     else out.type = ['土台から', '体の力も球速もこれから。まず体づくり（筋力・体重）から。'];
   } else if (velo != null) out.type = ['', 'VALDの数字が入ると、技術と体のどちらが課題か分かります。'];
-  if (bench.length) out.lines.push(['体の力（体重あたり）', bench.join('／') + '。100%を超えると145km/h投手の水準。']);
+  if (A.length) out.lines.push(['高3トップに対して', '平均 <b>' + Math.round(achAll(r) || A.reduce(function (s, x) { return s + x.a; }, 0) / A.length) + '%</b>。いちばん届いていないのは<b>' + EXPLAIN[A[0].m.k].s + '（' + Math.round(A[0].a) + '%）</b>、いちばん近いのは' + EXPLAIN[A[A.length - 1].m.k].s + '（' + Math.round(A[A.length - 1].a) + '%）。' + (aw != null ? '体重は目標（身長−90）の' + Math.round(aw) + '%。' : '') + '100%で、高校3年生のトップと同じ水準。']);
   if (r.eff != null && r.eff < 85) out.lines.push(['技術：回転の質', 'ストレートの回転効率が' + Math.round(r.eff) + '%（目安85〜100%）。回転の一部が「伸び」に使われていない。ボールの真後ろを指で押す感覚を作ると、同じ回転数でも伸びが増える。']);
   var shoulder = warn.filter(function (w) { return w.label.indexOf('肩') === 0; }), hip = warn.filter(function (w) { return w.label.indexOf('股関節') === 0; });
   if (warn.length && ((velo != null && velo >= 50) || (body != null && body >= 55)))
@@ -569,18 +591,19 @@ function drawTeam() {
     var mx = Math.max.apply(null, list.map(getV)), mn = Math.min.apply(null, list.map(getV));
     var out = '<section class="board"><div class="board-h"><h2>' + title + '</h2>' + (sub ? '<span class="board-sub">' + sub + '</span>' : '') + '</div><ol class="rank">';
     list.forEach(function (r, i) {
-      var v = getV(r), p = prevOf(r), dv = key === 'total' ? v : dev(r, key);
+      var v = getV(r), p = prevOf(r), dv = key === 'total' ? v : key === 'ach' ? null : dev(r, key);
       var w = mx === mn ? 100 : 15 + 85 * (v - mn) / (mx - mn);
       out += '<li class="' + (r.name === meN ? 'me' : '') + (i < 3 ? ' top' + (i + 1) : '') + '"><span class="pos">' + (i + 1) + '</span>' +
         '<span class="who">' + (staff ? '<a href="#" data-n="' + esc(r.name) + '">' + esc(r.name) + '</a>' : esc(r.name)) + '<small>' + esc(r.pos || '') + '</small></span>' +
-        '<span class="bar-wrap"><span class="rbar ' + dcls(dv) + '" style="width:' + w + '%"></span></span>' +
-        '<span class="val">' + (key === 'total' ? v.toFixed(0) : fmt(v, key)) + '</span>' +
-        '<span class="sub2">' + (key === 'total' ? '' : '偏差値 ' + (dv == null ? '—' : dv.toFixed(0))) + (p ? ' ' + arrow(key === 'total' ? total(p) : p[key], v, key) : '') + '</span></li>';
+        '<span class="bar-wrap"><span class="rbar ' + (key === 'ach' ? acls(v) : dcls(dv)) + '" style="width:' + w + '%"></span></span>' +
+        '<span class="val">' + (key === 'total' ? v.toFixed(0) : key === 'ach' ? Math.round(v) + '%' : fmt(v, key)) + '</span>' +
+        '<span class="sub2">' + (key === 'total' || key === 'ach' ? '' : '偏差値 ' + (dv == null ? '—' : dv.toFixed(0)) + (ach(r, key) != null ? '・高3トップの' + Math.round(ach(r, key)) + '%' : '')) + (p ? ' ' + (key === 'ach' ? achDiff(p, r) : arrow(key === 'total' ? total(p) : p[key], v, key)) : '') + '</span></li>';
     });
-    return out + '</ol>' + (key !== 'total' ? explain(key) : '') + '</section>';
+    return out + '</ol>' + (key !== 'total' && key !== 'ach' ? explain(key) : '') + '</section>';
   };
   h += '<div class="boards">' + board('総合偏差値', 'total', rs, total, '順位をつける項目の偏差値の平均');
-  RANKED.forEach(function (m) { if (S.f.grp !== 'all' && S.f.grp !== m.g) return; h += board(m.l, m.k, rs, function (r) { return r[m.k]; }, (m.en ? m.en + '・' : '') + m.u + (m.ref ? '・基準 ' + m.ref : '')); });
+  if (S.f.grp === 'all' || S.f.grp === 'VALD') h += board('VALD　高3トップに対して', 'ach', rs, achAll, 'VALD6項目の達成率の平均（100%＝高校3年生のトップ）');
+  RANKED.forEach(function (m) { if (S.f.grp !== 'all' && S.f.grp !== m.g) return; h += board(m.l, m.k, rs, function (r) { return r[m.k]; }, (m.en ? m.en + '・' : '') + m.u + (m.goal ? '・高3トップ ' + m.goal + m.u : m.ref ? '・基準 ' + m.ref : '')); });
   if (staff) {
     var warn = rs.map(function (r) { return { r: r, w: rom(r).filter(function (x) { return x.st === 'warn'; }) }; }).filter(function (x) { return x.w.length; });
     if (warn.length) h += '<section class="board romwarn"><div class="board-h"><h2>可動域で注意がある選手</h2><span class="board-sub">先生・トレーナーだけに表示</span></div><ul>' + warn.map(function (x) { return '<li><a href="#" data-n="' + esc(x.r.name) + '">' + esc(x.r.name) + '</a>：' + x.w.map(function (w) { return w.label; }).join('／') + '</li>'; }).join('') + '</ul></section>';
@@ -592,6 +615,10 @@ function drawTeam() {
 }
 
 // ===== 1人 =====
+function bmCard(r, p) {
+  return '<section class="mcard"><div class="mc-h"><span class="mc-name">Body Mass</span><span class="mc-en">体重（順位はつけない）</span></div>' +
+    '<div class="mc-body"><span class="mc-val">' + fmt(r.bm) + '<small>kg</small></span>' + (p ? arrow(p.bm, r.bm) : '') + '</div>' + achBar(r, 'bm').replace('高3トップ', '身長−90') + explain('bm', r) + '</section>';
+}
 function drawPlayer(n) {
   var rs = R.filter(function (r) { return r.name === n; }).sort(function (a, b) { return a.date < b.date ? -1 : 1; });
   if (!rs.length) return main('<section><h2>' + esc(n) + '</h2><p>まだ記録がありません。「入力する」から入れてください。</p></section>');
@@ -606,20 +633,21 @@ function drawPlayer(n) {
   var h = (last.date !== S.date ? '<section><p class="warn">⚠️ ' + JP(S.date) + 'の記録はまだありません。' + (last.date < S.date ? '前回' : 'ほかの日') + '（' + JP(last.date) + '）の結果を出しています</p></section>' : '') +
     '<section class="hero"><div class="hero-l"><div class="hero-name">' + esc(n) + '</div><div class="hero-meta">' + esc(last.pos || '') + '・' + esc(last.arm || '') + '　' + JP(last.date) + '</div>' +
     '<div class="hero-score"><span class="hs-label">総合偏差値</span><span class="hs-num">' + (t == null ? '—' : t.toFixed(0)) + '</span>' + (tp != null && t != null ? arrow(tp, t, 'x') : '') + '</div>' +
+    (achAll(last) != null ? '<div class="hero-ach"><span class="hs-label">VALD　高3トップに対して</span><b>' + Math.round(achAll(last)) + '%</b>' + (prev ? achDiff(prev, last) : '') + '</div>' : '') +
     (good.length ? '<div class="hero-tags"><span class="tag good">強み：' + good.slice(0, 2).map(function (x) { return EXPLAIN[x.m.k].s; }).join('・') + '</span><span class="tag work">伸びしろ：' + good.slice(-2).reverse().map(function (x) { return EXPLAIN[x.m.k].s; }).join('・') + '</span></div>' : '') +
     (DG.type && DG.type[0] ? '<div class="dg-type"><span class="dg-badge">' + DG.type[0] + '</span>' + DG.type[1] + '</div>' : (DG.type ? '<div class="dg-type">' + DG.type[1] + '</div>' : '')) +
     '</div><div class="hero-r">' + radar(items, now, pv) + '<div class="legend"><i class="lg-now"></i>' + SH(last.date) + (prev ? '<i class="lg-prev"></i>' + SH(prev.date) + '（前回）' : '') + '<span>線の外ほどチームの中で上（真ん中の太線＝50）</span></div></div></section>';
   h += '<section class="diag"><h2>この選手の見立て</h2>' + (good.length ? '<div class="dg-h">伸びしろが、投球にどうつながるか</div><ul class="dg-list">' + growthLinks(items, now) + '</ul>' : '') +
     DG.lines.map(function (l) { return '<div class="dg-line' + (l[0].indexOf('⚠️') === 0 ? ' risk' : '') + '"><b>' + l[0] + '</b><p>' + l[1] + '</p></div>'; }).join('') +
-    '<p class="note">タイプ分けは、VALD5項目の偏差値の平均と球速の偏差値を、チームの真ん中（50）で分けたもの。体重あたりの目安はDIMENSIONINGの145km/h投手の基準。1回の測定での位置なので、断定ではありません。</p></section>';
+    '<p class="note">タイプ分けは、VALD6項目の偏差値の平均と球速の偏差値を、チームの真ん中（50）で分けたもの。「高3トップ」はProgress社が測った高校3年生の最大値（世代のトップ）。1回の測定での位置なので、断定ではありません。</p></section>';
   var g = '';
   h += '<div class="cards2">';
   items.forEach(function (m) {
-    if (m.g !== g) { g = m.g; h += '<h2 class="grp">' + g + '</h2>'; }
+    if (m.g !== g) { g = m.g; h += '<h2 class="grp">' + g + '</h2>' + (g === 'VALD' ? bmCard(last, prev) : ''); }
     var v = last[m.k], dv = dev(last, m.k), k = rank(last, m.k);
     h += '<section class="mcard"><div class="mc-h"><span class="mc-name">' + m.l + '</span>' + (m.en ? '<span class="mc-en">' + m.en + '</span>' : '') + '</div>' +
       '<div class="mc-body"><span class="mc-val">' + fmt(v, m.k) + '<small>' + m.u + '</small></span>' + (prev ? arrow(prev[m.k], v, m.k) : '') + '</div>' +
-      '<div class="mc-rank">' + (k ? '<b>' + k.n + '人中 ' + k.r + '位</b>' : '—') + '<span>偏差値 ' + (dv == null ? '—' : dv.toFixed(0)) + '</span></div>' + meter(dv) + explain(m.k, last) + '</section>';
+      '<div class="mc-rank">' + (k ? '<b>' + k.n + '人中 ' + k.r + '位</b>' : '—') + '<span>偏差値 ' + (dv == null ? '—' : dv.toFixed(0)) + '</span></div>' + meter(dv) + (m.g === 'VALD' ? achBar(last, m.k) : '') + explain(m.k, last) + '</section>';
   });
   h += '</div><p class="note">' + VALD_NOTE + '</p>';
   // 可動域：部位ごとに左右を並べ、下に判定
@@ -668,10 +696,10 @@ function drawStatus() {
 function drawAbout() {
   var card = function (k) { var e = EXPLAIN[k]; return '<section class="mcard"><div class="mc-h"><span class="mc-name">' + (e.en || e.s) + '</span>' + (e.en ? '<span class="mc-en">' + e.s + '</span>' : '') + '</div><p>' + e.what + '</p><p class="note">' + e.read + '</p></section>'; };
   main('<h2 class="grp">ラプソード（投球）</h2><div class="cards2">' + ['speed_max', 'spin', 'tspin', 'eff', 'gyro', 'vb', 'hb'].map(card).join('') + '</div>' +
-    '<h2 class="grp">VALD（反動をつけたジャンプ）</h2><p class="note">VALDは、1回のジャンプを「しゃがむ（ブレーキ）→ 押す → 跳ぶ」に分けて測ります。野球にいちばん近いのは<b>ブレーキ</b>の局面＝投球の踏み出し脚、打撃の踏み込みで「前に進む体を止めて、回転に変える」動きです。</p><div class="cards2">' + ['jh', 'ci', 'ci100', 'rfd', 'pp'].map(card).join('') + '</div><p class="note">' + VALD_NOTE + '</p>' +
+    '<h2 class="grp">VALD（反動をつけたジャンプ）</h2><p class="note">VALDは、1回のジャンプを「しゃがむ（ブレーキ）→ 押す → 跳ぶ」に分けて測ります。野球にいちばん近いのは<b>ブレーキ</b>の局面＝投球の踏み出し脚、打撃の踏み込みで「前に進む体を止めて、回転に変える」動きです。</p><div class="cards2">' + ['bm', 'jh', 'pti', 'ci', 'ci100', 'ci_ratio', 'edi'].map(card).join('') + '</div><p class="note">' + VALD_NOTE + '</p>' +
     '<h2 class="grp">握力・可動域</h2><div class="cards2">' + card('grip_throw') +
     '<section class="mcard"><div class="mc-h"><span class="mc-name">可動域</span></div><p>広いほど良いわけではないので、<b>順位はつけません</b>。基準に届いているかと、左右の差で見ます。</p><p class="note">肩は、投げる側のトータルアーク（内旋＋外旋）が反対側より5°より大きく少ないと、肩のけがが約1.9倍。投げる側の外旋が反対側より5°以上多くないと約2.2倍（プロ投手の研究・Wilk 2011/2015）。全員分は先生・トレーナーの画面だけに出ます。</p></section></div>' +
-    '<section><h2>偏差値の見かた</h2><p>50＝チームの真ん中、60＝上から約16%、40＝下から約16%。<b>同じ日に測った十数人の中での位置</b>なので、全国の基準ではありません。今回の分は、入力した人が増えるたびに少し動きます。</p></section>');
+    '<section><h2>「高3トップに対して◯%」の見かた</h2><p>VALDの目標値は、Progress社が測った<b>高校3年生のデータの最大値</b>＝世代のトップの数字です。自分の数字 ÷ 目標値で、トップに対して何%まで来ているかを出しています（体重だけは、身長−90が目標）。100%で、高校3年生のトップと同じ水準。チームの偏差値とちがって、<b>ほかの人が入力しても動きません</b>。</p></section><section><h2>偏差値の見かた</h2><p>50＝チームの真ん中、60＝上から約16%、40＝下から約16%。<b>同じ日に測った十数人の中での位置</b>なので、全国の基準ではありません。今回の分は、入力した人が増えるたびに少し動きます。</p></section>');
 }
 
 start();
