@@ -198,7 +198,7 @@ function build() {
   DATES().forEach(function (d) {
     STAT[d] = {};
     var rs = R.filter(function (r) { return r.date === d; });
-    RANKED.forEach(function (m) {
+    RANKED.concat(S.D.items.vald.filter(function (m) { return m.k === 'bm'; })).forEach(function (m) {   // 体重は順位をつけないが、チームの画面に並べるので偏差値の元だけ出す
       var v = rs.map(function (r) { return r[m.k]; }).filter(function (x) { return x != null; });
       if (v.length < 3) { STAT[d][m.k] = null; return; }
       var mean = v.reduce(function (a, b) { return a + b; }, 0) / v.length;
@@ -681,13 +681,13 @@ function drawTeam() {
         '<span class="who">' + (staff ? '<a href="#" data-n="' + esc(r.name) + '">' + esc(r.name) + '</a>' : esc(r.name)) + '<small>' + esc(r.pos || '') + '</small></span>' +
         '<span class="bar-wrap"><span class="rbar ' + (key === 'ach' ? acls(v) : dcls(dv)) + '" style="width:' + w + '%"></span></span>' +
         '<span class="val">' + (key === 'total' ? v.toFixed(0) : key === 'ach' ? Math.round(v) + '%' : fmt(v, key)) + '</span>' +
-        '<span class="sub2">' + (key === 'total' || key === 'ach' ? '' : '偏差値 ' + (dv == null ? '—' : dv.toFixed(0)) + (ach(r, key) != null ? '・' + (valdItem(key).gl || '高3トップ') + 'の' + Math.round(ach(r, key)) + '%' : '')) + (p ? ' ' + (key === 'ach' ? achDiff(p, r) : arrow(key === 'total' ? total(p) : p[key], v, key)) : '') + '</span></li>';
+        '<span class="sub2">' + (key === 'total' || key === 'ach' ? '' : '偏差値 ' + (dv == null ? '—' : dv.toFixed(0)) + (ach(r, key) != null ? '・' + (valdItem(key).gl || (valdItem(key).goalBy === 'ht-90' ? '身長−90' : '高3トップ')) + 'の' + Math.round(ach(r, key)) + '%' : '')) + (p ? ' ' + (key === 'ach' ? achDiff(p, r) : arrow(key === 'total' ? total(p) : p[key], v, key)) : '') + '</span></li>';
     });
     return out + '</ol>' + (key !== 'total' && key !== 'ach' ? explain(key) : '') + '</section>';
   };
   h += '<div class="boards">' + board('総合偏差値', 'total', rs, total, '順位をつける項目の偏差値の平均');
   if (S.f.grp === 'all' || S.f.grp === 'VALD') h += board('VALD　高3トップに対して', 'ach', rs, achAll, 'VALD6項目の達成率の平均（100%＝高校3年生のトップ）');
-  RANKED.forEach(function (m) { if (S.f.grp !== 'all' && S.f.grp !== m.g) return; h += board(m.l, m.k, rs, function (r) { return r[m.k]; }, (m.en ? m.en + '・' : '') + m.u + (m.goal ? '・' + (m.gl || '高3トップ') + ' ' + m.goal + m.u + (m.uni ? '・大学生平均 ' + m.uni + m.u : '') : m.ref ? '・基準 ' + m.ref : '')); });
+  RANKED.forEach(function (m) { if (S.f.grp !== 'all' && S.f.grp !== m.g) return; if (m.k === 'jh') h += board('Body Mass', 'bm', rs, function (r) { return r.bm; }, '体重・kg・目標 身長−90（総合偏差値には入れない）'); h += board(m.l, m.k, rs, function (r) { return r[m.k]; }, (m.en ? m.en + '・' : '') + m.u + (m.goal ? '・' + (m.gl || '高3トップ') + ' ' + m.goal + m.u + (m.uni ? '・大学生平均 ' + m.uni + m.u : '') : m.ref ? '・基準 ' + m.ref : '')); });
   if (staff) {
     var warn = rs.map(function (r) { return { r: r, w: noRom(r) ? [] : rom(r).filter(function (x) { return x.st === 'warn'; }) }; }).filter(function (x) { return x.w.length; });
     if (warn.length) h += '<section class="board romwarn"><div class="board-h"><h2>可動域で注意がある選手</h2><span class="board-sub">先生・トレーナーだけに表示</span></div><ul>' + warn.map(function (x) { return '<li><a href="#" data-n="' + esc(x.r.name) + '">' + esc(x.r.name) + '</a>：' + x.w.map(function (w) { return w.label; }).join('／') + '</li>'; }).join('') + '</ul></section>';
@@ -752,7 +752,7 @@ function drawPlayer(n) {
   // これまでの推移
   if (rs.length > 1) {
     h += '<details class="ex history"><summary>これまでの記録（' + rs.length + '回）</summary><div class="scroll"><table><tr><th class="l">項目</th>' + rs.map(function (r) { return '<th>' + SH(r.date) + '</th>'; }).join('') + '</tr>';
-    items.forEach(function (m) { h += '<tr><td class="l">' + m.l + '</td>' + rs.map(function (r) { return '<td>' + fmt(r[m.k], m.k) + '</td>'; }).join('') + '</tr>'; });
+    [{ k: 'bm', l: 'Body Mass（体重）' }].concat(items).forEach(function (m) { h += '<tr><td class="l">' + m.l + '</td>' + rs.map(function (r) { return '<td>' + fmt(r[m.k], m.k) + '</td>'; }).join('') + '</tr>'; });
     h += '</table></div></details>';
   }
   main(h);
