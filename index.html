@@ -73,6 +73,12 @@ button.mini .spin.sm{border-color:#c5ccd6;border-top-color:#1f3a5f;margin:0}
 .secs{margin-top:12px}.secs h3{margin:0 0 8px;font-size:15px}.sec{margin:0 0 8px;padding:10px 12px;border-left:5px solid #aeb8c4;border-radius:10px;background:#f6f7f9}.sec.sec-ok{border-left-color:#50a874;background:#f5fbf7}.sec.sec-work{border-left-color:#dc942c;background:#fff8ec}
 .sec-h{display:flex;justify-content:space-between;gap:8px;align-items:baseline}.sec-badge{padding:2px 8px;border-radius:999px;background:#fff;font-size:11px;font-weight:700;color:#394556}.sec-n{margin:4px 0;font-size:12px;color:#394556}.sec ul{margin:4px 0;padding-left:18px;font-size:13px;line-height:1.55}
 .ach-mk{position:absolute;top:-2px;bottom:-2px;width:2px;margin-left:-1px;background:#1d2330}.ach-bar{overflow:visible}.ach-u{display:flex;justify-content:space-between;margin-top:3px;font-size:11px;color:#5a6270}.ach-ok{color:#2f7d4f}
+.quadsec .quad-wrap{display:grid;grid-template-columns:minmax(0,340px) 1fr;gap:14px;align-items:start}@media(max-width:700px){.quadsec .quad-wrap{grid-template-columns:1fr}}
+svg.quad{width:100%;max-width:340px;display:block;margin:0 auto}.q-bg{stroke:none}.q-hh{fill:#e6f0fa}.q-hl{fill:#fff3e0}.q-lh{fill:#eef6ee}.q-ll{fill:#f4f4f4}
+.q-axis{stroke:#1f3a5f;stroke-width:1.5}.q-lab{font-size:11px;font-weight:800;fill:#1f3a5f99}.q-t{font-size:11px;fill:#1f3a5f;font-weight:700}
+.q-dot.q-other{fill:#1f3a5f33}.q-dot.q-all{fill:#3975b8;stroke:#fff;stroke-width:1.5}.q-dot.q-me{fill:#c0392b;stroke:#fff;stroke-width:2.5}.q-name{font-size:10px;fill:#1f3a5f}.q-mename{font-size:11px;font-weight:800;fill:#c0392b}
+.quad-fb{font-size:13px;line-height:1.6}.qf-pos{color:#555}.qf-type{margin:6px 0 2px;font-weight:700}.quad-fb .dg-badge{background:#1f3a5f;color:#fff}
+.qf-dir{margin-top:8px;padding:8px 10px;border-left:4px solid #9a5200;border-radius:8px;background:#fff6ea}.qf-todo{margin:6px 0 0;padding-left:20px}.qf-todo li{margin:3px 0}
 </style>
 
 <title>測定</title><meta name="robots" content="noindex"></head>
@@ -500,22 +506,76 @@ var LINK = {
   edi: '踏み出し脚で体を止める力。前に進む勢いを回転に変える量が増え、球速に直結しやすい',
   grip_throw: '指先でボールを押す力。回転数と制球に効く'
 };
+// ===== 4つの型（横＝VALD偏差値・縦＝ラプソード偏差値。どちらもチームの真ん中50で分ける） =====
+var RAP_KEYS = ['speed_max', 'spin', 'tspin'];
+function quadOf(b, p) { return b >= 50 ? (p >= 50 ? 'hh' : 'hl') : (p >= 50 ? 'lh' : 'll'); }
+// 練習の方向（文言はここだけ直せば画面に出る）
+var QUAD = {
+  hh: { name: '噛み合っている', pos: 'VALD 高・ラプソード 高', sum: '体の力も、ボールの数字もチームの上位。',
+    dir: '今の形を崩さずに、体とボールの両方を少しずつ上げる',
+    todo: ['体はもう一段強く：重さを上げた筋力トレーニングと、体重を目標（身長−90）に近づける', 'ボールは「質」を磨く：回転効率・回転数を上げて、同じ球速でも打たれにくいストレートに', '変化球をストレートと同じ腕の振りで投げられるようにして、組み立てを増やす'] },
+  hl: { name: '技術が課題', pos: 'VALD 高・ラプソード 低', sum: '<b>体の力はあるのに、ボールの数字に変わり切っていない。</b>',
+    dir: 'フォームで、体の力をボールに伝える練習を優先する',
+    todo: ['踏み出し脚で体を「止めて」、その勢いを回転に変える動き（ステップして止まってから投げるドリル）', 'メディシンボール投げで、下半身→体幹→腕の順番で力をつなぐ感覚を作る', '指先でボールの真後ろを押して、回転数・回転効率を上げる（キャッチボールから意識する）'] },
+  lh: { name: '体が課題', pos: 'VALD 低・ラプソード 高', sum: '<b>技術でボールの数字を出している。</b>体を作れば、いちばん伸びしろが大きいタイプ。',
+    dir: '体づくりを優先する（投げる技術は今のままでよい）',
+    todo: ['下半身の筋力トレーニング（スクワット系）で、踏み切る力・しゃがみ込みの力を上げる', 'ジャンプ系の練習で「速く大きな力を出す」力を上げる', '食事で体重を目標（身長−90）に近づける'] },
+  ll: { name: '土台から', pos: 'VALD 低・ラプソード 低', sum: '体の力も、ボールの数字もこれから。',
+    dir: '体づくりと、基本のフォームづくりを並行して進める',
+    todo: ['筋力トレーニングと食事で、体重と下半身の力をつける', 'ジャンプ系の練習で、地面を強く押す感覚を作る', 'キャッチボールから、踏み出し脚で止まって投げる基本の形を作る'] }
+};
+// 散布図：me＝本人の名前（なければ全員を同じ強さで描く）
+function quadChart(rows, me, showNames) {
+  var W = 320, P = 34, lo = 25, hi = 75, sc = function (v) { return P + (W - 2 * P) * (Math.max(lo, Math.min(hi, v)) - lo) / (hi - lo); };
+  var c = sc(50), h = '<svg class="quad" viewBox="0 0 ' + W + ' ' + W + '" role="img" aria-label="VALD偏差値とラプソード偏差値の4つの型">';
+  h += '<rect class="q-bg q-lh" x="' + P + '" y="' + P + '" width="' + (c - P) + '" height="' + (c - P) + '"/><rect class="q-bg q-hh" x="' + c + '" y="' + P + '" width="' + (W - P - c) + '" height="' + (c - P) + '"/>' +
+    '<rect class="q-bg q-ll" x="' + P + '" y="' + c + '" width="' + (c - P) + '" height="' + (W - P - c) + '"/><rect class="q-bg q-hl" x="' + c + '" y="' + c + '" width="' + (W - P - c) + '" height="' + (W - P - c) + '"/>';
+  h += '<line class="q-axis" x1="' + c + '" y1="' + P + '" x2="' + c + '" y2="' + (W - P) + '"/><line class="q-axis" x1="' + P + '" y1="' + c + '" x2="' + (W - P) + '" y2="' + c + '"/>';
+  h += '<text class="q-lab" x="' + (P + 4) + '" y="' + (P + 14) + '">' + QUAD.lh.name + '</text><text class="q-lab" x="' + (W - P - 4) + '" y="' + (P + 14) + '" text-anchor="end">' + QUAD.hh.name + '</text>' +
+    '<text class="q-lab" x="' + (P + 4) + '" y="' + (W - P - 6) + '">' + QUAD.ll.name + '</text><text class="q-lab" x="' + (W - P - 4) + '" y="' + (W - P - 6) + '" text-anchor="end">' + QUAD.hl.name + '</text>';
+  h += '<text class="q-t" x="' + (W / 2) + '" y="' + (W - 8) + '" text-anchor="middle">← 低い　VALD偏差値　高い →</text>' +
+    '<text class="q-t" transform="translate(13,' + (W / 2) + ') rotate(-90)" text-anchor="middle">← 低い　ラプソード偏差値　高い →</text>';
+  rows.forEach(function (o) {
+    var x = sc(o.b), y = W - sc(o.p), isMe = me && o.name === me;
+    if (me && !isMe) h += '<circle class="q-dot q-other" cx="' + x + '" cy="' + y + '" r="5"/>';
+  });
+  rows.forEach(function (o) {
+    var x = sc(o.b), y = W - sc(o.p), isMe = me && o.name === me;
+    if (!me) h += '<circle class="q-dot q-all" cx="' + x + '" cy="' + y + '" r="6"/>' + (showNames ? '<text class="q-name" x="' + (x + 8) + '" y="' + (y + 4) + '">' + esc(o.name) + '</text>' : '');
+    else if (isMe) h += '<circle class="q-dot q-me" cx="' + x + '" cy="' + y + '" r="9"/><text class="q-name q-mename" x="' + x + '" y="' + (y - 13) + '" text-anchor="middle">あなた</text>';
+  });
+  return h + '</svg>';
+}
+function quadRows(date) {
+  return R.filter(function (r) { return r.date === date; }).map(function (r) { var d = diagnose(r); return { name: r.name, b: d.body, p: d.rap }; }).filter(function (o) { return o.b != null && o.p != null; });
+}
+function quadSection(r, DG) {
+  if (DG.q == null) return '';
+  var Q = QUAD[DG.q];
+  return '<section class="quadsec"><h2>VALD × ラプソードの4つの型</h2><div class="quad-wrap">' + quadChart(quadRows(r.date), r.name) +
+    '<div class="quad-fb"><div class="qf-pos">VALD偏差値 <b>' + DG.body.toFixed(0) + '</b>・ラプソード偏差値 <b>' + DG.rap.toFixed(0) + '</b></div>' +
+    '<div class="qf-type"><span class="dg-badge q-badge-' + DG.q + '">' + Q.name + '</span>' + Q.pos + '</div><p>' + Q.sum + '</p>' +
+    '<div class="qf-dir">これからの練習の方向：<b>' + Q.dir + '</b></div><ol class="qf-todo">' + Q.todo.map(function (t) { return '<li>' + t + '</li>'; }).join('') + '</ol></div></div>' +
+    '<p class="note">VALD偏差値＝VALD6項目の偏差値の平均。ラプソード偏差値＝ストレート最高球速・回転数・トゥルースピンの偏差値の平均。どちらもその日のチームの中での位置で、真ん中（50）で4つに分けています。薄い丸はチームのほかの選手。</p></section>';
+}
+
 function diagnose(r) {
   var vald = ['jh', 'pti', 'ci', 'ci100', 'ci_ratio', 'edi'].map(function (k) { return dev(r, k); }).filter(function (v) { return v != null; });
   var body = vald.length ? vald.reduce(function (a, b) { return a + b; }, 0) / vald.length : null;
   var velo = dev(r, 'speed_max');
+  var rapL = RAP_KEYS.map(function (k) { return dev(r, k); }).filter(function (v) { return v != null; });
+  var rap = rapL.length ? rapL.reduce(function (a, b) { return a + b; }, 0) / rapL.length : null;
   var warn = noRom(r) ? [] : rom(r).filter(function (x) { return x.st === 'warn'; });
   var out = { type: '', lines: [] };
   // 外の基準＝高校3年生のトップ（Progress社の最大値）に対して何%か
   var A = S.D.items.vald.filter(function (m) { return m.rank; }).map(function (m) { return { m: m, a: ach(r, m.k) }; }).filter(function (x) { return x.a != null; }).sort(function (x, y) { return x.a - y.a; });
   var aw = ach(r, 'bm');
   var U = S.D.items.vald.filter(function (m) { return m.uni && r[m.k] != null; }), uOk = U.filter(function (m) { return r[m.k] >= m.uni; });
-  if (body != null && velo != null) {
-    if (body >= 50 && velo >= 50) out.type = ['噛み合っている', '体の力も球速もチームの上位。体と技術の両方を少しずつ伸ばす段階。'];
-    else if (body >= 50) out.type = ['技術が課題', '<b>体の力はあるのに、球速に変わり切っていない。</b>伸ばすのはフォーム側（踏み出し脚で体を止めて、回転に変える動き）。'];
-    else if (velo >= 50) out.type = ['体が課題', '<b>技術で球速を出している。</b>体（筋力・パワー）を作れば、いちばん伸びしろが大きいタイプ。'];
-    else out.type = ['土台から', '体の力も球速もこれから。まず体づくり（筋力・体重）から。'];
-  } else if (velo != null) out.type = ['', 'VALDの数字が入ると、技術と体のどちらが課題か分かります。'];
+  out.body = body; out.rap = rap;
+  if (body != null && rap != null) {
+    out.q = quadOf(body, rap);
+    out.type = [QUAD[out.q].name, QUAD[out.q].sum];
+  } else if (rap != null) out.type = ['', 'VALDの数字が入ると、技術と体のどちらが課題か分かります。'];
   if (A.length) out.lines.push(['高3トップに対して', '平均 <b>' + Math.round(achAll(r) || A.reduce(function (s, x) { return s + x.a; }, 0) / A.length) + '%</b>。いちばん届いていないのは<b>' + EXPLAIN[A[0].m.k].s + '（' + Math.round(A[0].a) + '%）</b>、いちばん近いのは' + EXPLAIN[A[A.length - 1].m.k].s + '（' + Math.round(A[A.length - 1].a) + '%）。' + (U.length ? '大学生平均を超えたのは' + U.length + '項目中' + uOk.length + '項目。' : '') + (aw != null ? '体重は目標（身長−90）の' + Math.round(aw) + '%。' : '') + '100%で、高校3年生のトップと同じ水準。']);
   if (r.eff != null && r.eff < 85) out.lines.push(['技術：回転の質', 'ストレートの回転効率が' + Math.round(r.eff) + '%（目安85〜100%）。回転の一部が「伸び」に使われていない。ボールの真後ろを指で押す感覚を作ると、同じ回転数でも伸びが増える。']);
   var shoulder = warn.filter(function (w) { return w.label.indexOf('肩') === 0; }), hip = warn.filter(function (w) { return w.label.indexOf('股関節') === 0; });
@@ -685,6 +745,8 @@ function drawTeam() {
     });
     return out + '</ol>' + (key !== 'total' && key !== 'ach' ? explain(key) : '') + '</section>';
   };
+  var QR = quadRows(S.date);
+  if (QR.length) h += '<section class="quadsec"><h2>VALD × ラプソードの4つの型（チーム）</h2>' + quadChart(QR, null, true) + '<p class="note">右上＝' + QUAD.hh.name + '／右下＝' + QUAD.hl.name + '／左上＝' + QUAD.lh.name + '／左下＝' + QUAD.ll.name + '。選手の画面に、型ごとの練習の方向が出ます。</p></section>';
   h += '<div class="boards">' + board('総合偏差値', 'total', rs, total, '順位をつける項目の偏差値の平均');
   if (S.f.grp === 'all' || S.f.grp === 'VALD') h += board('VALD　高3トップに対して', 'ach', rs, achAll, 'VALD6項目の達成率の平均（100%＝高校3年生のトップ）');
   RANKED.forEach(function (m) { if (S.f.grp !== 'all' && S.f.grp !== m.g) return; if (m.k === 'jh') h += board('Body Mass', 'bm', rs, function (r) { return r.bm; }, '体重・kg・目標 身長−90（総合偏差値には入れない）'); h += board(m.l, m.k, rs, function (r) { return r[m.k]; }, (m.en ? m.en + '・' : '') + m.u + (m.goal ? '・' + (m.gl || '高3トップ') + ' ' + m.goal + m.u + (m.uni ? '・大学生平均 ' + m.uni + m.u : '') : m.ref ? '・基準 ' + m.ref : '')); });
@@ -721,9 +783,10 @@ function drawPlayer(n) {
     (good.length ? '<div class="hero-tags"><span class="tag good">強み：' + good.slice(0, 2).map(function (x) { return EXPLAIN[x.m.k].s; }).join('・') + '</span><span class="tag work">伸びしろ：' + good.slice(-2).reverse().map(function (x) { return EXPLAIN[x.m.k].s; }).join('・') + '</span></div>' : '') +
     (DG.type && DG.type[0] ? '<div class="dg-type"><span class="dg-badge">' + DG.type[0] + '</span>' + DG.type[1] + '</div>' : (DG.type ? '<div class="dg-type">' + DG.type[1] + '</div>' : '')) +
     '</div><div class="hero-r">' + radar(items, now, pv) + '<div class="legend"><i class="lg-now"></i>' + SH(last.date) + (prev ? '<i class="lg-prev"></i>' + SH(prev.date) + '（前回）' : '') + '<span>線の外ほどチームの中で上（真ん中の太線＝50）</span></div></div></section>';
+  h += quadSection(last, DG);
   h += '<section class="diag"><h2>この選手の見立て</h2>' + (good.length ? '<div class="dg-h">伸びしろが、投球にどうつながるか</div><ul class="dg-list">' + growthLinks(items, now) + '</ul>' : '') +
     DG.lines.map(function (l) { return '<div class="dg-line' + (l[0].indexOf('⚠️') === 0 ? ' risk' : '') + '"><b>' + l[0] + '</b><p>' + l[1] + '</p></div>'; }).join('') +
-    '<p class="note">タイプ分けは、VALD6項目の偏差値の平均と球速の偏差値を、チームの真ん中（50）で分けたもの。「高3トップ」はProgress社が測った高校3年生の最大値（世代のトップ）。グラフの縦線は大学生の平均値。1回の測定での位置なので、断定ではありません。</p></section>';
+    '<p class="note">タイプ分けは、VALD6項目の偏差値の平均とラプソード3項目の偏差値の平均を、チームの真ん中（50）で分けたもの。「高3トップ」はProgress社が測った高校3年生の最大値（世代のトップ）。グラフの縦線は大学生の平均値。1回の測定での位置なので、断定ではありません。</p></section>';
   var g = '';
   h += '<div class="cards2">';
   items.forEach(function (m) {
