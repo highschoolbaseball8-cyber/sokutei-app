@@ -79,6 +79,8 @@ svg.quad{width:100%;max-width:340px;display:block;margin:0 auto}.q-bg{stroke:non
 .q-dot.q-other{fill:#1f3a5f33}.q-dot.q-all{fill:#3975b8;stroke:#fff;stroke-width:1.5}.q-dot.q-me{fill:#c0392b;stroke:#fff;stroke-width:2.5}.q-name{font-size:10px;fill:#1f3a5f}.q-mename{font-size:11px;font-weight:800;fill:#c0392b}
 .quad-fb{font-size:13px;line-height:1.6}.qf-pos{color:#555}.qf-type{margin:6px 0 2px;font-weight:700}.quad-fb .dg-badge{background:#1f3a5f;color:#fff}
 .qf-dir{margin-top:8px;padding:8px 10px;border-left:4px solid #9a5200;border-radius:8px;background:#fff6ea}.qf-todo{margin:6px 0 0;padding-left:20px}.qf-todo li{margin:3px 0}
+.q-lead{stroke:#1f3a5f66;stroke-width:1}.q-name{paint-order:stroke;stroke:#ffffffdd;stroke-width:3px}
+.q-list{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;font-size:12px}.q-li{padding:6px 8px;border-radius:8px;line-height:1.5}.q-li b{display:block;color:#1f3a5f}.q-li small{display:block;color:#666;font-size:10px}.q-li-hh{background:#e6f0fa}.q-li-hl{background:#fff3e0}.q-li-lh{background:#eef6ee}.q-li-ll{background:#f4f4f4}
 </style>
 
 <title>測定</title><meta name="robots" content="noindex"></head>
@@ -526,7 +528,8 @@ var QUAD = {
 };
 // 散布図：me＝本人の名前（なければ全員を同じ強さで描く）
 function quadChart(rows, me, showNames) {
-  var W = 320, P = 34, lo = 25, hi = 75, sc = function (v) { return P + (W - 2 * P) * (Math.max(lo, Math.min(hi, v)) - lo) / (hi - lo); };
+  var span = Math.max(8, Math.ceil(Math.max.apply(null, rows.map(function (o) { return Math.max(Math.abs(o.b - 50), Math.abs(o.p - 50)); }).concat([0])) + 2));
+  var W = 320, P = 34, lo = 50 - span, hi = 50 + span, sc = function (v) { return P + (W - 2 * P) * (Math.max(lo, Math.min(hi, v)) - lo) / (hi - lo); };
   var c = sc(50), h = '<svg class="quad" viewBox="0 0 ' + W + ' ' + W + '" role="img" aria-label="VALD偏差値とラプソード偏差値の4つの型">';
   h += '<rect class="q-bg q-lh" x="' + P + '" y="' + P + '" width="' + (c - P) + '" height="' + (c - P) + '"/><rect class="q-bg q-hh" x="' + c + '" y="' + P + '" width="' + (W - P - c) + '" height="' + (c - P) + '"/>' +
     '<rect class="q-bg q-ll" x="' + P + '" y="' + c + '" width="' + (c - P) + '" height="' + (W - P - c) + '"/><rect class="q-bg q-hl" x="' + c + '" y="' + c + '" width="' + (W - P - c) + '" height="' + (W - P - c) + '"/>';
@@ -539,9 +542,28 @@ function quadChart(rows, me, showNames) {
     var x = sc(o.b), y = W - sc(o.p), isMe = me && o.name === me;
     if (me && !isMe) h += '<circle class="q-dot q-other" cx="' + x + '" cy="' + y + '" r="5"/>';
   });
+  if (!me) {
+    // 名前は重ならない位置を探して置く（右→左→上→下→少しずつ上下にずらす。離れたら細い線でつなぐ）
+    var pts = rows.map(function (o) { return { o: o, x: sc(o.b), y: W - sc(o.p) }; });
+    var boxes = pts.map(function (q) { return { x1: q.x - 6, y1: q.y - 6, x2: q.x + 6, y2: q.y + 6 }; });
+    var hit = function (b) { if (b.x1 < 2 || b.x2 > W - 2 || b.y1 < P - 2 || b.y2 > W - P + 2) return true; return boxes.some(function (o) { return b.x1 < o.x2 && b.x2 > o.x1 && b.y1 < o.y2 && b.y2 > o.y1; }); };
+    pts.forEach(function (q) { h += '<circle class="q-dot q-all" cx="' + q.x + '" cy="' + q.y + '" r="5"/>'; });
+    if (showNames) pts.slice().sort(function (a, b) { return a.y - b.y; }).forEach(function (q) {
+      var tw = q.o.name.length * 10 + 2, th = 12, cand = [];
+      var base = [[8, -6], [-8 - tw, -6], [-tw / 2, -20], [-tw / 2, 8]];
+      [0, 1, 2, 3, 4, 5, 6].forEach(function (k) { base.forEach(function (d) { [1, -1].forEach(function (sg) { if (k === 0 && sg < 0) return; cand.push([d[0], d[1] + sg * k * 13]); }); }); });
+      var pick = null;
+      for (var i = 0; i < cand.length; i++) { var b = { x1: q.x + cand[i][0], y1: q.y + cand[i][1], x2: q.x + cand[i][0] + tw, y2: q.y + cand[i][1] + th }; if (!hit(b)) { pick = b; break; } }
+      if (!pick) pick = { x1: q.x + 8, y1: q.y - 6, x2: q.x + 8 + tw, y2: q.y + 6 };
+      boxes.push(pick);
+      var lx = Math.max(pick.x1, Math.min(pick.x2, q.x)), ly = Math.max(pick.y1, Math.min(pick.y2, q.y));
+      if (Math.abs(lx - q.x) + Math.abs(ly - q.y) > 12) h += '<line class="q-lead" x1="' + q.x + '" y1="' + q.y + '" x2="' + lx + '" y2="' + ly + '"/>';
+      h += '<text class="q-name" x="' + pick.x1 + '" y="' + (pick.y2 - 2) + '">' + esc(q.o.name) + '</text>';
+    });
+  }
   rows.forEach(function (o) {
     var x = sc(o.b), y = W - sc(o.p), isMe = me && o.name === me;
-    if (!me) h += '<circle class="q-dot q-all" cx="' + x + '" cy="' + y + '" r="6"/>' + (showNames ? '<text class="q-name" x="' + (x + 8) + '" y="' + (y + 4) + '">' + esc(o.name) + '</text>' : '');
+    if (!me) return;
     else if (isMe) h += '<circle class="q-dot q-me" cx="' + x + '" cy="' + y + '" r="9"/><text class="q-name q-mename" x="' + x + '" y="' + (y - 13) + '" text-anchor="middle">あなた</text>';
   });
   return h + '</svg>';
@@ -746,7 +768,7 @@ function drawTeam() {
     return out + '</ol>' + (key !== 'total' && key !== 'ach' ? explain(key) : '') + '</section>';
   };
   var QR = quadRows(S.date);
-  if (QR.length) h += '<section class="quadsec"><h2>VALD × ラプソードの4つの型（チーム）</h2>' + quadChart(QR, null, true) + '<p class="note">右上＝' + QUAD.hh.name + '／右下＝' + QUAD.hl.name + '／左上＝' + QUAD.lh.name + '／左下＝' + QUAD.ll.name + '。選手の画面に、型ごとの練習の方向が出ます。</p></section>';
+  if (QR.length) h += '<section class="quadsec"><h2>VALD × ラプソードの4つの型（チーム）</h2>' + quadChart(QR, null, true) + '<div class="q-list">' + ['hh', 'lh', 'hl', 'll'].map(function (q) { var ns = QR.filter(function (o) { return quadOf(o.b, o.p) === q; }); return '<div class="q-li q-li-' + q + '"><b>' + QUAD[q].name + '</b><small>' + QUAD[q].pos + '</small><span>' + (ns.length ? ns.map(function (o) { return esc(o.name); }).join('、') : '—') + '</span></div>'; }).join('') + '</div><p class="note">選手の画面に、型ごとの練習の方向が出ます。</p></section>';
   h += '<div class="boards">' + board('総合偏差値', 'total', rs, total, '順位をつける項目の偏差値の平均');
   if (S.f.grp === 'all' || S.f.grp === 'VALD') h += board('VALD　高3トップに対して', 'ach', rs, achAll, 'VALD6項目の達成率の平均（100%＝高校3年生のトップ）');
   RANKED.forEach(function (m) { if (S.f.grp !== 'all' && S.f.grp !== m.g) return; if (m.k === 'jh') h += board('Body Mass', 'bm', rs, function (r) { return r.bm; }, '体重・kg・目標 身長−90（総合偏差値には入れない）'); h += board(m.l, m.k, rs, function (r) { return r[m.k]; }, (m.en ? m.en + '・' : '') + m.u + (m.goal ? '・' + (m.gl || '高3トップ') + ' ' + m.goal + m.u + (m.uni ? '・大学生平均 ' + m.uni + m.u : '') : m.ref ? '・基準 ' + m.ref : '')); });
