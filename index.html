@@ -82,6 +82,7 @@ svg.quad{width:100%;max-width:340px;display:block;margin:0 auto}.q-bg{stroke:non
 .q-lead{stroke:#1f3a5f66;stroke-width:1}.q-name{paint-order:stroke;stroke:#ffffffdd;stroke-width:3px}
 .q-list{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;font-size:12px}.q-li{padding:6px 8px;border-radius:8px;line-height:1.5}.q-li b{display:block;color:#1f3a5f}.q-li small{display:block;color:#666;font-size:10px}.q-li-hh{background:#e6f0fa}.q-li-hl{background:#fff3e0}.q-li-lh{background:#eef6ee}.q-li-ll{background:#f4f4f4}
 button.ghost.ret-b{display:block;margin-top:3px;padding:2px 8px;min-height:0;font-size:10px;line-height:1.6;white-space:nowrap}.ret-list{margin-top:10px;font-size:13px}.ret-list summary{cursor:pointer;font-weight:700;color:#1f3a5f}.ret-list li{display:flex;gap:8px;align-items:center;margin:4px 0}.ret-list small{color:#777}
+.gl{display:block;font-size:10px;color:#777;font-weight:400}table.roster select{font-size:14px;padding:4px 6px}table.roster td{vertical-align:middle}
 </style>
 
 <title>測定</title><meta name="robots" content="noindex"></head>
@@ -153,7 +154,7 @@ function drawPickName() {
 }
 function nav() {
   var tabs = S.D.role === 'staff'
-    ? [['status', '入力状況'], ['team', 'チーム'], ['player', '選手ごと'], ['input', '入力する'], ['about', '項目の説明']]
+    ? [['status', '入力状況'], ['team', 'チーム'], ['player', '選手ごと'], ['input', '入力する'], ['roster', '名簿'], ['about', '項目の説明']]
     : [['input', '入力する'], ['mine', '自分の結果'], ['team', 'チームの順位'], ['about', '項目の説明']];
   $('nav').innerHTML = tabs.map(function (t) { return '<button data-v="' + t[0] + '" class="' + (S.view === t[0] ? 'on' : '') + '">' + t[1] + '</button>'; }).join('') +
     '<select id="selDate">' + DATES(true).map(function (d) { return '<option value="' + d + '"' + (d === S.date ? ' selected' : '') + '>' + JP(d) + (d === S.D.today ? '（今回）' : '') + '</option>'; }).join('') + '</select>' +
@@ -171,7 +172,7 @@ function go(v) {
   $('title').textContent = S.D.team + ' 測定';
   $('sub').textContent = S.D.role === 'staff' ? '先生・トレーナー用（全員のデータ）' : (S.me ? S.me.name + '（' + S.me.pos + '・' + S.me.arm + '）' : '');
   nav();
-  ({ input: drawInput, mine: function () { drawPlayer(S.me.name); }, team: drawTeam, player: function () { drawPlayer(S.player); }, status: drawStatus, about: drawAbout })[v]();
+  ({ input: drawInput, mine: function () { drawPlayer(S.me.name); }, team: drawTeam, player: function () { drawPlayer(S.player); }, status: drawStatus, roster: drawRoster, about: drawAbout })[v]();
 }
 
 // ===== データの組み立て（体の行＋投球の行 → 1人1日の記録） =====
@@ -219,7 +220,14 @@ function build() {
 function DATES(withToday) { var s = {}; R.forEach(function (r) { s[r.date] = 1; }); if (withToday && S.D.today) s[S.D.today] = 1; return Object.keys(s).sort(); }
 // 引退・卒業の印がある人は、その人の最後の記録より後の日付を見ているときは一覧に出さない（去年の日付を選べば今までどおり出る）
 function RET() { return (S.D && S.D.retired) || {}; }
-function isOut(n) { if (!RET()[n]) return false; var l = latest(n); return !l || l.date < S.date; }
+// 学年：入学した年度から、その日の年度で出す（4月で1つ上がる）。3年は RETIRE_MD（既定 8/1）から引退、4年目＝卒業
+function ROS() { return (S.D && S.D.roster) || {}; }
+function FY(d) { var y = +d.slice(0, 4), m = +d.slice(5, 7); return m >= 4 ? y : y - 1; }
+function gradeAt(n, d) { var e = ROS()[n]; return e ? FY(d) - e + 1 : null; }
+function autoOut(n, d) { var g = gradeAt(n, d); if (g == null) return ''; if (g > 3) return '卒業'; if (g === 3 && (d.slice(5) >= (S.D.retireMd || '08-01') || +d.slice(5, 7) < 4)) return '引退'; return ''; }
+function outWhy(n) { return RET()[n] ? '手動' : autoOut(n, S.date); }
+function isOut(n) { if (!RET()[n] && !autoOut(n, S.date)) return false; var l = latest(n); return !l || l.date < S.date; }
+function GL(n) { var g = gradeAt(n, S.date); return g == null ? '' : g > 3 ? '卒業' : g + '年'; }
 function NAMES(all) { var s = {}; R.slice().sort(function (a, b) { return a.date < b.date ? 1 : -1; }).forEach(function (r) { s[r.name] = 1; }); return Object.keys(s).filter(function (n) { return all || !isOut(n); }); }
 function rec(d, n) { return R.filter(function (r) { return r.date === d && r.name === n; })[0]; }
 function latest(n) { return R.filter(function (r) { return r.name === n; }).sort(function (a, b) { return a.date < b.date ? 1 : -1; })[0]; }
@@ -856,12 +864,12 @@ function drawStatus() {
   names.forEach(function (n) {
     var r = rec(d, n);
     var cell = function (k, all) { return '<td class="' + (k === 0 ? 'warn' : k < all ? 'part' : 'ok') + '">' + k + '／' + all + '</td>'; };
-    h += '<tr><td class="l"><a href="#" data-n="' + esc(n) + '">' + esc(n) + '</a>' + (r ? '' : '<button class="ghost ret-b" data-ret="' + esc(n) + '">引退・卒業</button>') + '</td>' +
+    h += '<tr><td class="l"><a href="#" data-n="' + esc(n) + '">' + esc(n) + '</a>' + (GL(n) ? '<small class="gl">' + GL(n) + '</small>' : '') + (r ? '' : '<button class="ghost ret-b" data-ret="' + esc(n) + '">引退・卒業</button>') + '</td>' +
       '<td class="' + (r && r.pl.length ? 'ok' : 'warn') + '">' + (r ? r.pl.length : 0) + '球</td>' + cell(has(r, it.vald), it.vald.length) + (NO_ROM_DATES.indexOf(d) >= 0 ? '<td class="ref">今回なし</td>' : cell(has(r, it.rom), it.rom.length)) + cell(has(r, it.grip), it.grip.length) + cell(has(r, it.info), it.info.length) +
       '<td class="l ref">' + (r && r.updated ? esc(String(r.updated).replace('T', ' ').slice(0, 16)) : '') + '</td></tr>';
   });
   var outs = NAMES(true).filter(isOut);
-  h += '</table></div>' + (outs.length ? '<details class="ret-list"><summary>引退・卒業で出していない人（' + outs.length + '人）</summary><ul>' + outs.map(function (n) { return '<li>' + esc(n) + '<small>（最後の記録 ' + SH(latest(n).date) + '）</small><button class="ghost ret-b" data-unret="' + esc(n) + '">戻す</button></li>'; }).join('') + '</ul><p class="note">記録は消えていません。前の日付を選べば、今までどおり結果と順位に出ます。</p></details>' : '<p class="note">引退・卒業した人は、名前の横の「引退・卒業」を押すと次の測定から一覧に出なくなります（記録は残ります）。</p>') + (S.D.sheetUrl ? '<p><a href="' + S.D.sheetUrl + '" target="_blank">スプレッドシート（元のデータ）を開く</a></p>' : '') + '</section>';
+  h += '</table></div>' + (outs.length ? '<details class="ret-list"><summary>引退・卒業で出していない人（' + outs.length + '人）</summary><ul>' + outs.map(function (n) { return '<li>' + esc(n) + '<small>（' + outWhy(n) + '・最後の記録 ' + SH(latest(n).date) + '）</small>' + (RET()[n] ? '<button class="ghost ret-b" data-unret="' + esc(n) + '">戻す</button>' : '<small>（名簿で学年を直すと戻ります）</small>') + '</li>'; }).join('') + '</ul><p class="note">記録は消えていません。前の日付を選べば、今までどおり結果と順位に出ます。</p></details>' : '<p class="note">引退・卒業した人は、名前の横の「引退・卒業」を押すと次の測定から一覧に出なくなります（記録は残ります）。</p>') + (S.D.sheetUrl ? '<p><a href="' + S.D.sheetUrl + '" target="_blank">スプレッドシート（元のデータ）を開く</a></p>' : '') + '</section>';
   main(h);
   document.querySelectorAll('a[data-n]').forEach(function (a) { a.onclick = function (e) { e.preventDefault(); S.player = a.dataset.n; go('player'); }; });
   document.querySelectorAll('button.ret-b').forEach(function (b) {
@@ -870,6 +878,28 @@ function drawStatus() {
       b.disabled = true; b.textContent = '…';
       call('setRetired', { name: n, on: on }).then(function (m) { S.D.retired = m; if (S.player === n && on) S.player = NAMES()[0]; toast(n + (on ? 'さんを一覧から外しました' : 'さんを戻しました')); drawStatus(); })
         .catch(function (e) { toast('保存できませんでした：' + e.message, 4000); drawStatus(); });
+    };
+  });
+}
+
+// ===== 名簿（先生・トレーナー）：学年を手で設定する =====
+function drawRoster() {
+  var T = S.D.today, fy = FY(T), md = (S.D.retireMd || '08-01').split('-');
+  var names = NAMES(true).slice().sort(function (a, b) { var ga = gradeAt(a, T), gb = gradeAt(b, T); ga = ga == null ? 9 : ga; gb = gb == null ? 9 : gb; return ga - gb || (a < b ? -1 : 1); });
+  var opt = function (n) { var g = gradeAt(n, T); return ['', 1, 2, 3].map(function (v) { return '<option value="' + v + '"' + ((g == null ? '' : g) === v || (v === '' && g == null) ? ' selected' : '') + '>' + (v === '' ? '— 未設定' : v + '年') + '</option>'; }).join('') + (g != null && g > 3 ? '<option selected value="x">卒業</option>' : ''); };
+  var h = '<section><h2>名簿（' + fy + '年度）</h2><p class="note">' + JP(T) + '時点の学年を選ぶと、すぐ保存されます。<br>学年は毎年4月に自動で1つ上がります。<br>3年生は' + (+md[0]) + '月' + (+md[1]) + '日から「引退」、4月で「卒業」になり、次の測定から一覧に出なくなります（記録は残ります）。<br>未設定の人は自動では外れません。</p>' +
+    '<div class="scroll"><table class="roster"><tr><th class="l">名前</th><th>学年</th><th class="l">今の扱い</th></tr>';
+  names.forEach(function (n) {
+    var l = latest(n), why = RET()[n] ? '引退・卒業（手動）' : autoOut(n, T) ? autoOut(n, T) + '（自動）' : '表示中';
+    h += '<tr><td class="l">' + esc(n) + '<small class="gl">' + (l ? '最後の記録 ' + SH(l.date) : '') + '</small></td><td><select class="gsel" data-n="' + esc(n) + '">' + opt(n) + '</select></td><td class="l ' + (why === '表示中' ? 'ok' : 'ref') + '">' + why + '</td></tr>';
+  });
+  main(h + '</table></div></section>');
+  document.querySelectorAll('select.gsel').forEach(function (sel) {
+    sel.onchange = function () {
+      var n = sel.dataset.n, g = sel.value; if (g === 'x') return;
+      sel.disabled = true;
+      call('setGrade', { name: n, entry: g === '' ? '' : fy - (+g) + 1 }).then(function (m) { S.D.roster = m; toast(n + 'さんを' + (g === '' ? '未設定' : g + '年') + 'にしました'); drawRoster(); })
+        .catch(function (e) { toast('保存できませんでした：' + e.message, 4000); drawRoster(); });
     };
   });
 }
