@@ -141,15 +141,22 @@ function drawPickName() {
     '<select id="nm" class="big-in"><option value="">— 選ぶ —</option>' + names.map(function (n) { return '<option>' + esc(n) + '</option>'; }).join('') + '</select>' +
     '<input id="nm2" class="big-in" placeholder="新しく入力（フルネーム・漢字）">' +
     '<div class="row"><label>ポジション <select id="pos"><option>投手</option><option>野手</option></select></label>' +
-    '<label>投げる腕 <select id="arm"><option>右投げ</option><option>左投げ</option></select></label></div>' +
+    '<label>投げる腕 <select id="arm"><option>右投げ</option><option>左投げ</option></select></label>' +
+    '<label>学年 <select id="gr"><option value="">— 選ぶ —</option><option value="1">1年</option><option value="2">2年</option><option value="3">3年</option></select></label></div>' +
     '<button class="primary" id="ok">これで始める</button></section>');
-  $('nm').onchange = function () { var r = latest($('nm').value); if (r) { $('pos').value = r.pos || '投手'; $('arm').value = r.arm || '右投げ'; } };
+  var setGr = function (n) { var g = n ? gradeAt(n, S.D.today) : null; $('gr').disabled = g != null; $('gr').value = g != null && g <= 3 ? String(g) : ''; };
+  $('nm').onchange = function () { var r = latest($('nm').value); if (r) { $('pos').value = r.pos || '投手'; $('arm').value = r.arm || '右投げ'; } setGr($('nm').value); };
+  $('nm2').oninput = function () { setGr($('nm2').value.trim().replace(/\s+/g, '') || $('nm').value); };
   $('ok').onclick = function () {
     var n = ($('nm2').value || $('nm').value).trim().replace(/\s+/g, '');
     if (!n) return toast('名前を選ぶか入力してください');
-    S.me = { name: n, pos: $('pos').value, arm: $('arm').value };
-    localStorage.setItem('nh_me', JSON.stringify(S.me));
-    start();
+    var has = gradeAt(n, S.D.today) != null, g = $('gr').value;
+    if (!has && !g) return toast('学年を選んでください');
+    var go2 = function () { S.me = { name: n, pos: $('pos').value, arm: $('arm').value }; localStorage.setItem('nh_me', JSON.stringify(S.me)); start(); };
+    if (has) return go2();
+    $('ok').disabled = true;
+    call('setGrade', { name: n, entry: FY(S.D.today) - (+g) + 1 }).then(function (m) { S.D.roster = m; go2(); })
+      .catch(function (e) { $('ok').disabled = false; toast('学年を保存できませんでした：' + e.message, 4000); });
   };
 }
 function nav() {
